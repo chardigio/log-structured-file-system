@@ -15,7 +15,7 @@
 #define NO_SEGMENTS 32
 #define SEG_SIZE 1048576 // 1MB
 #define BLOCK_SIZE 1024  // 1KB
-#define IMAP_BLOCKS 80
+#define IMAP_BLOCKS 40
 /*
 Lab 7:
  - import
