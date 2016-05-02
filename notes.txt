@@ -1,0 +1,15 @@
+Annika Wiesinger
+2 May 2016
+
+functions: functions that aren't the main commands 
+commands: the commands listed in the lab instructions
+
+(this was just the first way I thought of organizing it, it's easy to change if it doesn't make sense)
+
+I made list and exit both just print out the file names that are in FILENAME_MAP and then exit will exit the function. 
+-we need to make list also print out the size of the file but I didn't have time to finish that part. I have an idea about just storing the size to make it easy though
+
+clarification questions:
+what data exactly needs to be printed by exit?
+what needs to be removed when a file is removed?
+

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <cmath>
 #include <stdbool.h>
+#include "commands.cpp"
 
 #define NO_SEGMENTS 32
 #define SEG_SIZE 1048576 // 1MB
