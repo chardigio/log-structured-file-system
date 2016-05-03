@@ -118,29 +118,18 @@ std::string getFileSize(std::string inode_string){
     fileSize = split(std::to_string(SEGMENT[SEGMENT_NO][block_position]))[1];
   }
   else{
-    std::cout <<"three" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(SEGMENT_NO);
-    std::cout <<"four" << std::endl;
     std::ifstream disk_segment("DRIVE/"+segment);
-    std::cout <<"five" << std::endl;
     unsigned int block_in_segment = block_position % BLOCK_SIZE;
-    std::cout <<"six" << std::endl;
     char block[BLOCK_SIZE];
-    std::cout <<"seven" << std::endl;
     disk_segment.seekg(block_in_segment);
-    std::cout <<"eight" << std::endl;
     char buffer[BLOCK_SIZE];
-    std::cout <<"nine" << std::endl;
     disk_segment.read(buffer, BLOCK_SIZE);
-    std::cout <<"ten" << std::endl;
     //block should be the inode
     memcpy(block, buffer, BLOCK_SIZE);
-    std::cout <<"eleven" << std::endl;
     std::string block_string = block;
-    std::cout <<"twelve" << std::endl;
     std::cout << "the problem: " << block_string << std::endl;
     fileSize = split(block_string)[1];
-    std::cout <<"thirteen" << std::endl;
     //use block to get the file size 
   }
 
@@ -151,7 +140,6 @@ void printFileNames(){
 	std::ifstream filenames("DRIVE/FILENAME_MAP");
 	std::string line;
 	while(getline(filenames, line)){
-    std::cout <<"one" << std::endl;
 		std::vector<std::string> components = split(line);
 		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
 	}
