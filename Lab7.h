@@ -16,6 +16,11 @@
 #define SEG_SIZE 1048576 // 1MB
 #define BLOCK_SIZE 1024  // 1KB
 #define IMAP_BLOCKS 40
+
+unsigned int IMAP[IMAP_BLOCKS*BLOCK_SIZE];
+unsigned int SEGMENT[NO_SEGMENTS][BLOCK_SIZE];
+unsigned int SEGMENT_NO = 1;
+
 /*
 Lab 7:
  - import
