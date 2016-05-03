@@ -107,34 +107,51 @@ std::string getFileSize(std::string inode_string){
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int block_position = IMAP[inode_number];
+  std::string fileSize;
+  std::cout <<"two" << std::endl;
   if(block_position == -1){
     //the node doesn't exit
   }
 
   unsigned int segment_location = block_position/BLOCK_SIZE;
   if(SEGMENT_NO == segment_location){
-    std::string fileSize = split(std::to_string(SEGMENT[SEGMENT_NO][block_position]))[1];
+    fileSize = split(std::to_string(SEGMENT[SEGMENT_NO][block_position]))[1];
   }
   else{
+    std::cout <<"three" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(SEGMENT_NO);
+    std::cout <<"four" << std::endl;
     std::ifstream disk_segment("DRIVE/"+segment);
+    std::cout <<"five" << std::endl;
     unsigned int block_in_segment = block_position % BLOCK_SIZE;
+    std::cout <<"six" << std::endl;
     char block[BLOCK_SIZE];
+    std::cout <<"seven" << std::endl;
     disk_segment.seekg(block_in_segment);
+    std::cout <<"eight" << std::endl;
     char buffer[BLOCK_SIZE];
+    std::cout <<"nine" << std::endl;
     disk_segment.read(buffer, BLOCK_SIZE);
+    std::cout <<"ten" << std::endl;
     //block should be the inode
     memcpy(block, buffer, BLOCK_SIZE);
-    std::string fileSize = split(std::to_string(block))[1];
+    std::cout <<"eleven" << std::endl;
+    std::string block_string = block;
+    std::cout <<"twelve" << std::endl;
+    std::cout << "the problem: " << block_string << std::endl;
+    fileSize = split(block_string)[1];
+    std::cout <<"thirteen" << std::endl;
     //use block to get the file size 
   }
 
+  return fileSize;
 }
 
 void printFileNames(){
 	std::ifstream filenames("DRIVE/FILENAME_MAP");
 	std::string line;
 	while(getline(filenames, line)){
+    std::cout <<"one" << std::endl;
 		std::vector<std::string> components = split(line);
 		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
 	}
