@@ -18,7 +18,7 @@
 #define IMAP_BLOCKS 40
 
 unsigned int IMAP[IMAP_BLOCKS*BLOCK_SIZE];
-unsigned int SEGMENT[NO_SEGMENTS][BLOCK_SIZE];
+unsigned int SEGMENT[NO_SEGMENTS][BLOCK_SIZE][BLOCK_SIZE];
 unsigned int SEGMENT_NO = 1;
 
 /*
