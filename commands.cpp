@@ -97,7 +97,7 @@ void list() {
 
 void exit() {
   writeOutSegment(SEGMENT_NO);
-	printFileNames();
+	//printFileNames();
 	exit(0);
   //nothing
 }
