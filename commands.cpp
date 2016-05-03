@@ -1,12 +1,8 @@
 #include "functions.cpp"
 
 void import(std::string filename, std::string lfs_filename) {
-  //look for next sequential inode number, also check for filename dupe
-  int inode_number = nextInodeNumber(lfs_filename);
-  if (inode_number == 0){
-    std::cout << "Error: Duplicate filename." << std::endl;
-    return;
-  }
+  //look for next sequential inode number
+  int inode_number = nextInodeNumber();
 
   //open file that we're importing
   std::ifstream in(filename);
@@ -21,62 +17,62 @@ void import(std::string filename, std::string lfs_filename) {
   in.seekg(0, std::ios::beg);
 
   //find first available block and see what segment it is
-  unsigned int segment_no;
-  unsigned int last_imap_block_no;
-  findAvailableSpace(segment_no, last_imap_block_no);
-  std::string segment_name = "DRIVE/SEGMENT" + std::to_string(segment_no);
-  unsigned long last_imap_pos = (last_imap_block_no) ? (last_imap_block_no-1)*BLOCK_SIZE : last_imap_block_no*BLOCK_SIZE;
+  unsigned int last_imap_pos;
+  findAvailableSpace(SEGMENT_NO, last_imap_pos); //
+  unsigned int data_block_start_pos;
 
-  //get contents from last imap to copy to our new imap
-  char* imap_block = new char[BLOCK_SIZE];
-  unsigned long imap_end_pos = 0;
-  bool new_imap = false;
-  copyImap(segment_name, last_imap_pos, imap_block, imap_end_pos);
-
-  //if this is the first imap or the last imap was full, we want a new imap
-  if (imap_end_pos % BLOCK_SIZE < 8) { // 8 is the size of a byte pair
-    imap_end_pos = 0;
-    new_imap = true;
+  if (last_imap_pos > SEG_SIZE){ // if this is our first time importing
+    data_block_start_pos = 0;
+  }else if (BLOCK_SIZE - last_imap_pos%BLOCK_SIZE < ((in_size+BLOCK_SIZE-1)/BLOCK_SIZE) + 2) { // not enough space left in segment
+    writeOutSegment(SEGMENT_NO);
+    SEGMENT_NO++;
+    data_block_start_pos = 0;
+  }else{
+    data_block_start_pos = last_imap_pos + 1;
   }
-
-  //open SEGMENT and seek to first available block
-  std::fstream segment_file;
-  segment_file.open(segment_name.c_str(), std::fstream::binary | std::ios::out | std::ios::in);
-  if (last_imap_pos != 0) segment_file.seekp(last_imap_pos+BLOCK_SIZE);
 
   //read from file we're importing and write it in blocks of SEGMENT
   unsigned int i;
-  for (i = 0; i*BLOCK_SIZE < in_size; ++i) { //ask if we need to end segment with inode&imap
+  for (i = 0; i*BLOCK_SIZE < in_size; ++i) {
     char block[BLOCK_SIZE];
     in.read(block, BLOCK_SIZE);
-    segment_file.write(block, BLOCK_SIZE);
+    std::memcpy(SEGMENT[data_block_start_pos+i], block, BLOCK_SIZE);
   }
 
   // inode block string formatting (filename size(inbytes) block1 block2 block3 ... blockN)
   std::string inode_meta = lfs_filename + " " + std::to_string(in_size) + " ";
   for (int j = 0; j < i; ++j)
-    inode_meta += std::to_string(last_imap_block_no + j) + " ";
+    inode_meta += std::to_string(data_block_start_pos + j) + " ";
 
   //write that string to the next BLOCK
-  segment_file.seekp((last_imap_block_no + i) * BLOCK_SIZE);
-  segment_file.write(inode_meta.c_str(), inode_meta.length());
+  std::memcpy(SEGMENT[data_block_start_pos+i], inode_meta.c_str(), inode_meta.length());
 
   //update filename map
   updateFilenameMap(inode_number, lfs_filename);
 
   //write old imap and new inode number to next block
-  printf("%u\n", last_imap_block_no);
-  unsigned int inode_block = last_imap_block_no + i + 1;
-  segment_file.seekp((last_imap_block_no + i + 1) * BLOCK_SIZE);
-  segment_file.write(imap_block, imap_end_pos);
-  segment_file.write(reinterpret_cast<const char*>(&inode_number), 4);
-  segment_file.write(reinterpret_cast<const char*>(&inode_block), 4);
+  unsigned int inode_block_no = data_block_start_pos + i;
+  unsigned int imap_block_no = inode_block_no + 1;
+
+  IMAP[inode_number] = inode_block_no;
+  unsigned int imap_fragment_no = (imap_block_no)/BLOCK_SIZE; //the block of the imap we need to copy to the segment
+  std::memcpy(SEGMENT[imap_block_no], &IMAP[imap_fragment_no*BLOCK_SIZE], BLOCK_SIZE);
 
   //update checkpoint region
-  updateCR(new_imap, (segment_no-1)*SEG_SIZE/BLOCK_SIZE + (i+2) + last_imap_block_no); //i+2 to account for inode,imap blocks
+  updateCR(imap_fragment_no, imap_block_no);
+
+  /*
+  printf("%s\n", "let's import!");
+  printf("inode#:%d\n", inode_number);
+  printf("in_size:%d\n", in_size);
+  printf("segno, last_imap_pos:%d, %d\n", SEGMENT_NO, last_imap_pos);
+  printf("data_block_start_pos%d\n", data_block_start_pos);
+  std::cout << "inode meta:" << inode_meta << std::endl;
+  printf("imap_fragment_no%u\n", imap_fragment_no);
+  printf("latest_stored_at:%u\n", imap_block_no);
+  */
 
   in.close();
-  segment_file.close();
 }
 
 void remove(std::string lfs_filename) {
@@ -100,7 +96,8 @@ void list() {
 }
 
 void exit() {
+  writeOutSegment(SEGMENT_NO);
 	printFileNames();
-	exit(1);
+	exit(0);
   //nothing
 }

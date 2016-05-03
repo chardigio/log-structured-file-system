@@ -1,5 +1,4 @@
-#include "Lab7.h"
-//#include "functions.cpp"
+#include "commands.cpp"
 
 void parseLine(std::string line) {
   if (line.length() == 0) return;

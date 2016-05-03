@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <cmath>
 #include <stdbool.h>
-#include "commands.cpp"
 
 #define NO_SEGMENTS 32
 #define SEG_SIZE 1048576 // 1MB
@@ -18,7 +17,7 @@
 #define IMAP_BLOCKS 40
 
 unsigned int IMAP[IMAP_BLOCKS*BLOCK_SIZE];
-unsigned int SEGMENT[NO_SEGMENTS][BLOCK_SIZE][BLOCK_SIZE];
+unsigned int SEGMENT[BLOCK_SIZE][BLOCK_SIZE];
 unsigned int SEGMENT_NO = 1;
 
 /*

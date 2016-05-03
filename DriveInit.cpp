@@ -24,8 +24,8 @@ void initCheckpointRegion(){
   std::ofstream out;
   out.open("DRIVE/CHECKPOINT_REGION", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
-  char true_zero = 0;
-  for (int j = 0; j < IMAP_BLOCKS; ++j) out << true_zero << true_zero << true_zero << true_zero;
+  unsigned int neg1 = -1;
+  for (int j = 0; j < IMAP_BLOCKS; ++j) out.write(reinterpret_cast<const char*>(&neg1), 4);
 
   out.close();
 }
