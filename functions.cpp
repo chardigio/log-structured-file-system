@@ -102,11 +102,40 @@ void updateFilenameMap(unsigned int inode_number, std::string lfs_filename){
   filename_map2.close();
 }
 
+std::string getFileSize(std::string inode_string){
+  const char * inode_num = inode_string.c_str();
+  int inode_number_int = atoi(inode_num);
+  unsigned int inode_number = (unsigned int) inode_number_int;
+  unsigned int block_position = IMAP[inode_number];
+  if(block_position == -1){
+    //the node doesn't exit
+  }
+
+  unsigned int segment_location = block_position/BLOCK_SIZE;
+  if(SEGMENT_NO == segment_location){
+    std::string fileSize = split(std::to_string(SEGMENT[SEGMENT_NO][block_position]))[1];
+  }
+  else{
+    std::string segment = "SEGMENT" + std::to_string(SEGMENT_NO);
+    std::ifstream disk_segment("DRIVE/"+segment);
+    unsigned int block_in_segment = block_position % BLOCK_SIZE;
+    char block[BLOCK_SIZE];
+    disk_segment.seekg(block_in_segment);
+    char buffer[BLOCK_SIZE];
+    disk_segment.read(buffer, BLOCK_SIZE);
+    //block should be the inode
+    memcpy(block, buffer, BLOCK_SIZE);
+    std::string fileSize = split(std::to_string(block))[1];
+    //use block to get the file size 
+  }
+
+}
+
 void printFileNames(){
 	std::ifstream filenames("DRIVE/FILENAME_MAP");
 	std::string line;
 	while(getline(filenames, line)){
 		std::vector<std::string> components = split(line);
-		std::cout << split(line)[0] << std::endl;
+		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
 	}
 }

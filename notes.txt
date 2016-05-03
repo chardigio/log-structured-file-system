@@ -10,6 +10,5 @@ I made list and exit both just print out the file names that are in FILENAME_MAP
 -we need to make list also print out the size of the file but I didn't have time to finish that part. I have an idea about just storing the size to make it easy though
 
 clarification questions:
-what data exactly needs to be printed by exit?
 what needs to be removed when a file is removed?
 
