@@ -55,6 +55,7 @@ void import(std::string filename, std::string lfs_filename) {
   unsigned int imap_block_no = inode_block_no + 1;
 
   IMAP[inode_number] = inode_block_no;
+  printf("IMAP[%u] = %u\n", inode_number, inode_block_no);
   unsigned int imap_fragment_no = (inode_number)/BLOCK_SIZE; //the block of the imap we need to copy to the segment
   std::memcpy(SEGMENT[imap_block_no], &IMAP[imap_fragment_no*BLOCK_SIZE], BLOCK_SIZE);
 
@@ -78,7 +79,13 @@ void import(std::string filename, std::string lfs_filename) {
 }
 
 void remove(std::string lfs_filename) {
-  //nothing
+  /*
+  go to filename_map -> find the inode# related to the filename
+                     -> remove contents of this line before \n (this may require creating a new FILENAME_MAP and deleting the old one)
+  go to imap in memory -> change IMAP[inode#] to -1
+  go to segment in memory (as long as there's >= 1 block left) -> write out imap BLOCK_SIZE-sized fragment at IMAP[inode#/BLOCK_SIZE]
+  go to checkpoint region -> update byte (inode#/BLOCK_SIZE) with block_no+SEG_NO*BLOCK_SIZE
+  */
 }
 
 void cat(std::string lfs_filename) {

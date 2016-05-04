@@ -7,6 +7,7 @@ void restart(){
   findAvailableSpace(SEGMENT_NO, last_imap_pos);
   printf("Current Segment: %d\n", SEGMENT_NO);
   copyInSegment();
+  copyInImap();
 }
 
 void parseLine(std::string line) {

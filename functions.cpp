@@ -10,18 +10,21 @@ std::vector<std::string> split(const std::string &str) {
 }
 
 void copyImapBlock(unsigned int address, unsigned int fragment_no){
-  unsigned int segment_no = address / BLOCK_SIZE;
+  unsigned int segment_no = (address / BLOCK_SIZE) + 1;
   unsigned int block_start_pos = (address % BLOCK_SIZE) * BLOCK_SIZE;
-
+  //printf("bspos:%u\n", block_start_pos/BLOCK_SIZE);
   std::string segment_name = "DRIVE/SEGMENT" + std::to_string(segment_no);
   std::fstream segment_file;
   segment_file.open(segment_name.c_str(), std::fstream::binary | std::ios::in);
 
   segment_file.seekg(block_start_pos);
+  //std::cout << "tellg: " << segment_file.tellg() << std::endl;
   char buffer[BLOCK_SIZE];
   segment_file.read(buffer, BLOCK_SIZE);
+  //printf("BUFF: %c\n", buffer[0]);
+  //printf("BUFF: %c\n", buffer[1]);
   std::memcpy(&IMAP[fragment_no*BLOCK_SIZE], buffer, BLOCK_SIZE);
-
+  //printf("imap: %u\n", IMAP[0]);
   segment_file.close();
 }
 
@@ -46,6 +49,7 @@ void copyInImap(){
   cpr.close();
 
   for (unsigned int fragment_no = 0; fragment_no < addresses.size(); ++fragment_no){
+    //printf("adr: %u\n", addresses[fragment_no] % 1024);
     copyImapBlock(addresses[fragment_no], fragment_no);
   }
 }
@@ -55,15 +59,11 @@ void copyInSegment(){
   std::fstream segment_file;
   segment_file.open(segment_name.c_str(), std::fstream::binary | std::ios::in);
 
-  char buffer[SEG_SIZE];
-  segment_file.read(buffer, SEG_SIZE);
-  std::memcpy(&SEGMENT, buffer, SEG_SIZE);
-  /*for (int i = 0; i < SEG_SIZE; i+=BLOCK_SIZE){
-    printf("i: %d\n", i);
+  for (int i = 0; i < BLOCK_SIZE; ++i){
     char buffer[BLOCK_SIZE];
     segment_file.read(buffer, BLOCK_SIZE);
-    std::memcpy(&SEGMENT[i], buffer, BLOCK_SIZE);
-  }*/
+    std::memcpy(SEGMENT[i], buffer, BLOCK_SIZE);
+  }
 
   segment_file.close();
 }
@@ -173,7 +173,7 @@ std::string getFileSize(std::string inode_string){
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int block_position = IMAP[inode_number];
-  //printf("bpos: %d\n", block_position);
+  //printf("bpos: %d; ", block_position);
   std::string fileSize;
   if(block_position == -1){
     //the node doesn't exit
@@ -193,7 +193,7 @@ std::string getFileSize(std::string inode_string){
     //std::cout << "fileSz: " << fileSz << std::endl;
   }
   else{
-    //std::cout << "in else!" << std::endl;
+    //std::cout << "in else; ";
     //std::cout <<"two" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(segment_location + 1);
     //std::ifstream disk_segment("DRIVE/"+segment);
