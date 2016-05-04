@@ -22,6 +22,7 @@ void parseLine(std::string line) {
   else if (command[0] == "list"      && command.size() == 1) list();
   else if (command[0] == "exit"      && command.size() == 1) exit();
   else if (command[0] == "a"         && command.size() == 1) import("lab7.o", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
+  else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
   else std::cout << "Command not recognized." << std::endl;
 }
 

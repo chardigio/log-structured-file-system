@@ -4,7 +4,8 @@ std::vector<std::string> split(const std::string &str) {
   std::string buf;
   std::stringstream ss(str);
   std::vector<std::string> tokens;
-  while (ss >> buf) tokens.push_back(buf);
+  int no_tokens = 0;
+  while (ss >> buf && no_tokens++ < 128+2) tokens.push_back(buf);
   return tokens;
 }
 
@@ -109,9 +110,9 @@ void findAvailableSpace(unsigned int& segment_no, unsigned int& last_imap_pos){
   }
 
   cpr.close();
-  for (int i = 0; i < addresses.size(); ++i){
-    std::cout << addresses[i] << std::endl;
-  }
+
+  //for (int i = 0; i < addresses.size(); ++i) std::cout << addresses[i] << std::endl;
+
   if (addresses.size() > 0){
     auto most_recent_imap_pos = std::max_element(std::begin(addresses), std::end(addresses));
     last_imap_pos = ((unsigned int) *most_recent_imap_pos) % BLOCK_SIZE;
@@ -166,10 +167,13 @@ void updateFilenameMap(unsigned int inode_number, std::string lfs_filename){
 }
 
 std::string getFileSize(std::string inode_string){
+  //printf("\n%s\n", "getFileSize");
   const char * inode_num = inode_string.c_str();
+  //printf("i#%s\n", inode_num);
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int block_position = IMAP[inode_number];
+  //printf("bpos: %d\n", block_position);
   std::string fileSize;
   if(block_position == -1){
     //the node doesn't exit
@@ -177,7 +181,8 @@ std::string getFileSize(std::string inode_string){
     std::cout << "Lethal error dude slow your roll." << std::endl;
   }
 
-  unsigned int segment_location = block_position/BLOCK_SIZE;
+  unsigned int segment_location = inode_number/BLOCK_SIZE;
+  //std::cout << "segloc: " << segment_location << std::endl;
   if(SEGMENT_NO == (segment_location+1)){
     //std::cout << "in if!" << std::endl;
     std::string tmp = (char*) (SEGMENT[block_position]);
@@ -229,7 +234,9 @@ void printFileNames(){
 	std::ifstream filenames("DRIVE/FILENAME_MAP");
 	std::string line;
 	while(getline(filenames, line)){
-		std::vector<std::string> components = split(line);
-		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
+    if (line.length() > 1){
+  		std::vector<std::string> components = split(line);
+  		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
+    }
 	}
 }
