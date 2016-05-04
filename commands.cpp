@@ -79,10 +79,27 @@ void import(std::string filename, std::string lfs_filename) {
 }
 
 void remove(std::string lfs_filename) {
+  std::fstream filename_map;
+  std::string line;
+  std::string inode_string;
+  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
+  while(getline(filename_map, line)){
+    if(line.length() > 1){
+      if(lfs_filename.compare(split(line)[0]) == 0){
+        split(line)[1] = inode_string;
+        removeLineFromFilenameMap(lfs_filename);
+      }
+    }
+  }
+  const char * inode_num = inode_string.c_str();
+  int inode_number_int = atoi(inode_num);
+  unsigned int inode_number = (unsigned int) inode_number_int;
+  IMAP[inode_number] = -1;
+
   /*
-  go to filename_map -> find the inode# related to the filename
+  DONE go to filename_map -> find the inode# related to the filename
                      -> remove contents of this line before \n (this may require creating a new FILENAME_MAP and deleting the old one)
-  go to imap in memory -> change IMAP[inode#] to -1
+  DONE go to imap in memory -> change IMAP[inode#] to -1
   go to segment in memory (as long as there's >= 1 block left) -> write out imap BLOCK_SIZE-sized fragment at IMAP[inode#/BLOCK_SIZE]
   go to checkpoint region -> update byte (inode#/BLOCK_SIZE) with block_no+SEG_NO*BLOCK_SIZE
   */

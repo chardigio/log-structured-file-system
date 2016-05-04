@@ -240,3 +240,23 @@ void printFileNames(){
     }
 	}
 }
+
+void removeLineFromFilenameMap(std::string lfs_filename){
+  std::ifstream filename_map("DRIVE/FILENAME_MAP");
+  std::ofstream tempFile("DRIVE/temp.txt");
+
+  std::string fileName;
+  std::string inode_number;
+
+  while(filename_map >> fileName >> inode_number){
+    if(fileName != lfs_filename){
+      tempFile << fileName << " " << inode_number << std::endl;
+    }
+  }
+  filename_map.clear();
+  filename_map.seekg(0, std::ios::beg);
+  filename_map.close();
+  tempFile.close();
+  remove("DRIVE/FILENAME_MAP");
+  rename("DRIVE/temp.txt", "DRIVE/FILENAME_MAP");
+}

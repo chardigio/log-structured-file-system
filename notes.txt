@@ -12,3 +12,5 @@ I made list and exit both just print out the file names that are in FILENAME_MAP
 clarification questions:
 what needs to be removed when a file is removed?
 
+---------------------------------------------------------
+possibly necessary: files cannot be named the same thing, add check
