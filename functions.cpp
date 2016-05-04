@@ -63,7 +63,7 @@ void copyInSegment(){
     char buffer[BLOCK_SIZE];
     segment_file.read(buffer, BLOCK_SIZE);
     std::memcpy(SEGMENT[i], buffer, BLOCK_SIZE);
-    std::cout << "segment[i]: " << SEGMENT[i] << std::endl;
+    //std::cout << "segment[i]: " << SEGMENT[i] << std::endl;
   }
 
   segment_file.close();
@@ -82,11 +82,11 @@ void writeOutSegment(){
   segment_file.close();
 }
 
-void updateCR(unsigned int new_imap_block_no, unsigned int new_imap_pos){
+void updateCR(unsigned int imap_fragment, unsigned int new_imap_pos){
   std::fstream cr;
   cr.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
 
-  cr.seekp(new_imap_block_no*4);
+  cr.seekp(imap_fragment*4);
   cr.write(reinterpret_cast<const char*>(&new_imap_pos), 4);
 
   cr.close();
@@ -185,18 +185,18 @@ std::string getFileSize(std::string inode_string){
   unsigned int segment_location = inode_number/BLOCK_SIZE;
   //std::cout << "segloc: " << segment_location << std::endl;
   if(SEGMENT_NO == (segment_location+1)){
-    std::cout << "in if!" << std::endl;
-    std::cout << SEGMENT[block_position] << std::endl;
+    //std::cout << "in if!" << std::endl;
+    //std::cout << SEGMENT[block_position] << std::endl;
     std::string tmp = (char*) (SEGMENT[block_position]);
-    std::cout << tmp << std::endl;
-    std::cout << "twelve" << std::endl;
+    //std::cout << tmp << std::endl;
+    //std::cout << "twelve" << std::endl;
     //std::cout << "tmp: " << tmp << std::endl;
     fileSize = split(tmp)[1];
-    std::cout << "thirteen" << std::endl;
+    //std::cout << "thirteen" << std::endl;
     //std::cout << "fileSz: " << fileSz << std::endl;
   }
   else{
-    std::cout << "in else; ";
+    //std::cout << "in else; ";
     //std::cout <<"two" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(segment_location + 1);
     //std::ifstream disk_segment("DRIVE/"+segment);
