@@ -167,13 +167,10 @@ void updateFilenameMap(unsigned int inode_number, std::string lfs_filename){
 }
 
 std::string getFileSize(std::string inode_string){
-  //printf("\n%s\n", "getFileSize");
   const char * inode_num = inode_string.c_str();
-  //printf("i#%s\n", inode_num);
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int block_position = IMAP[inode_number];
-  //printf("bpos: %d; ", block_position);
   std::string fileSize;
   if(block_position == -1){
     //the node doesn't exit
@@ -182,49 +179,22 @@ std::string getFileSize(std::string inode_string){
   }
 
   unsigned int segment_location = inode_number/BLOCK_SIZE;
-  //std::cout << "segloc: " << segment_location << std::endl;
   if(SEGMENT_NO == (segment_location+1)){
-    //std::cout << "in if!" << std::endl;
     std::string tmp = (char*) (SEGMENT[block_position]);
-    //std::cout << "twelve" << std::endl;
-    //std::cout << "tmp: " << tmp << std::endl;
     fileSize = split(tmp)[1];
-    //std::cout << "thirteen" << std::endl;
-    //std::cout << "fileSz: " << fileSz << std::endl;
   }
   else{
-    //std::cout << "in else; ";
-    //std::cout <<"two" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(segment_location + 1);
-    //std::ifstream disk_segment("DRIVE/"+segment);
     std::fstream disk_segment;
     disk_segment.open("DRIVE/"+segment, std::ios::binary | std::ios::in);
-    //std::cout << "three" << std::endl;
     unsigned int block_in_segment = block_position % BLOCK_SIZE;
-    //std::cout << "four" << std::endl;
     char block[BLOCK_SIZE];
-    //std::cout << "five" << std::endl;
-    //std::cout << "block: " << block << std::endl;
     disk_segment.seekg(block_in_segment * BLOCK_SIZE);
-    //std::cout << "six" << std::endl;
     char buffer[BLOCK_SIZE];
-    //std::cout << "seven" << std::endl;
     disk_segment.read(buffer, BLOCK_SIZE);
-    //std::cout << "eight" << std::endl;
-    //block should be the inode
-    //std::cout << "block: " << block << std::endl;
     std::memcpy(&block, &buffer, BLOCK_SIZE);
-    //std::cout << "nine" << std::endl;
     std::string block_string(block);
-    //std::string block_string = block;
-    //std::cout << "ten" << std::endl;
-    //printf("blockcstr: %s\n", block);
-    //std::cout << "block string: " << block_string << std::endl;
-    //std::cout << "the problem: " << block_string << std::endl;
     fileSize = split(block_string)[1];
-    //std::cout << "file size: " << fileSize << std::endl;
-    //std::cout << "eleven" << std::endl;
-    //use block to get the file size
   }
 
   return fileSize;

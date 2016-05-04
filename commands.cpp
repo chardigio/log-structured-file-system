@@ -83,18 +83,52 @@ void remove(std::string lfs_filename) {
   std::string line;
   std::string inode_string;
   filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
+  //std::cout << "one" << std::endl;
   while(getline(filename_map, line)){
     if(line.length() > 1){
       if(lfs_filename.compare(split(line)[0]) == 0){
-        split(line)[1] = inode_string;
+        inode_string = split(line)[1];
         removeLineFromFilenameMap(lfs_filename);
       }
     }
   }
+  //std::cout << "two" << std::endl;
   const char * inode_num = inode_string.c_str();
+  //std::cout << "three" << std::endl;
   int inode_number_int = atoi(inode_num);
+  //std::cout << "four" << std::endl;
   unsigned int inode_number = (unsigned int) inode_number_int;
+  //std::cout << "five" << std::endl;
   IMAP[inode_number] = -1;
+  //std::cout << "six" << std::endl;
+
+  std::fstream segment_file;
+  //std::cout << "seven" << std::endl;
+  segment_file.open("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::ios::binary | std::ios::in | std::ios::out);
+  //std::cout << "eight" << std::endl;
+  unsigned int last_imap_pos;
+  //std::cout << "nine" << std::endl;
+  findAvailableSpace(SEGMENT_NO, last_imap_pos);
+  //std::cout << "ten" << std::endl;
+  last_imap_pos += BLOCK_SIZE;
+  //std::cout << "eleven" << std::endl;
+  segment_file.seekp(last_imap_pos);
+  std::cout << "twelve" << std::endl;
+  segment_file.write(reinterpret_cast<const char*>(&IMAP[inode_number/BLOCK_SIZE]), BLOCK_SIZE);
+  std::cout << "thirteen" << std::endl;
+  std::fstream checkpoint_region;
+  std::cout << "fourteen" << std::endl;
+  checkpoint_region.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::in | std::ios::out);
+  std::cout << "fifteen" << std::endl;
+  checkpoint_region.seekp(inode_number/BLOCK_SIZE);
+  std::cout << "sixteen" << std::endl;
+  checkpoint_region.write(reinterpret_cast<const char*>(&last_imap_pos+BLOCK_SIZE), BLOCK_SIZE);
+  std::cout << "seventeen" << std::endl;
+  //SEEK to inode_number/BLOCK_SIZE
+  //WRITE   last_imap_pos+BLOCK_SIZE, BLOCK_SIZE
+  //find available space gives you the last imap position, so add 1024 to it to get to where you write to
+  //go to the segment in memory and write out the imap block at the end of the segment
+
 
   /*
   DONE go to filename_map -> find the inode# related to the filename
