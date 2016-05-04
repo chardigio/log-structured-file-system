@@ -17,4 +17,4 @@ drive: DriveLink
 clean:
 	rm -f *.o *~ *.swp Lab7 DriveInit
 
-again:	clean all
+again:	clean drive all

@@ -1,9 +1,6 @@
 #include "functions.cpp"
 
 void import(std::string filename, std::string lfs_filename) {
-  //look for next sequential inode number
-  int inode_number = nextInodeNumber();
-
   //open file that we're importing
   std::ifstream in(filename);
   if (!in.good()){
@@ -18,13 +15,13 @@ void import(std::string filename, std::string lfs_filename) {
 
   //find first available block and see what segment it is
   unsigned int last_imap_pos;
-  findAvailableSpace(SEGMENT_NO, last_imap_pos); //
+  findAvailableSpace(SEGMENT_NO, last_imap_pos);
   unsigned int data_block_start_pos;
 
   if (last_imap_pos > SEG_SIZE){ // if this is our first time importing
     data_block_start_pos = 0;
   }else if (BLOCK_SIZE - last_imap_pos%BLOCK_SIZE < ((in_size+BLOCK_SIZE-1)/BLOCK_SIZE) + 2) { // not enough space left in segment
-    writeOutSegment(SEGMENT_NO);
+    writeOutSegment();
     SEGMENT_NO++;
     data_block_start_pos = 0;
   }else{
@@ -47,6 +44,9 @@ void import(std::string filename, std::string lfs_filename) {
   //write that string to the next BLOCK
   std::memcpy(SEGMENT[data_block_start_pos+i], inode_meta.c_str(), inode_meta.length());
 
+  //look for next sequential inode number
+  int inode_number = nextInodeNumber();
+
   //update filename map
   updateFilenameMap(inode_number, lfs_filename);
 
@@ -55,11 +55,11 @@ void import(std::string filename, std::string lfs_filename) {
   unsigned int imap_block_no = inode_block_no + 1;
 
   IMAP[inode_number] = inode_block_no;
-  unsigned int imap_fragment_no = (imap_block_no)/BLOCK_SIZE; //the block of the imap we need to copy to the segment
+  unsigned int imap_fragment_no = (inode_number)/BLOCK_SIZE; //the block of the imap we need to copy to the segment
   std::memcpy(SEGMENT[imap_block_no], &IMAP[imap_fragment_no*BLOCK_SIZE], BLOCK_SIZE);
 
   //update checkpoint region
-  updateCR(imap_fragment_no, imap_block_no);
+  updateCR(imap_fragment_no, imap_block_no+(SEGMENT_NO-1)*BLOCK_SIZE);
 
   /*
   printf("%s\n", "let's import!");
@@ -67,10 +67,12 @@ void import(std::string filename, std::string lfs_filename) {
   printf("in_size:%d\n", in_size);
   printf("segno, last_imap_pos:%d, %d\n", SEGMENT_NO, last_imap_pos);
   printf("data_block_start_pos%d\n", data_block_start_pos);
-  std::cout << "inode meta:" << inode_meta << std::endl;
+  //std::cout << "inode meta:" << inode_meta << std::endl;
   printf("imap_fragment_no%u\n", imap_fragment_no);
   printf("latest_stored_at:%u\n", imap_block_no);
   */
+
+  printf("Reached: %d\n", imap_block_no);
 
   in.close();
 }
@@ -96,8 +98,7 @@ void list() {
 }
 
 void exit() {
-  writeOutSegment(SEGMENT_NO);
+  writeOutSegment();
 	//printFileNames();
 	exit(0);
-  //nothing
 }

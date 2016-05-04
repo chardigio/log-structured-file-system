@@ -4,3 +4,7 @@
 *.DS_Store
 DRIVE
 *.dSYM
+Lab7
+Lab7.o
+DriveInit
+DriveInit.o
