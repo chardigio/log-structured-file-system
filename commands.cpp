@@ -113,17 +113,17 @@ void remove(std::string lfs_filename) {
   last_imap_pos += BLOCK_SIZE;
   //std::cout << "eleven" << std::endl;
   segment_file.seekp(last_imap_pos);
-  std::cout << "twelve" << std::endl;
+  //std::cout << "twelve" << std::endl;
   segment_file.write(reinterpret_cast<const char*>(&IMAP[inode_number/BLOCK_SIZE]), BLOCK_SIZE);
-  std::cout << "thirteen" << std::endl;
+  //std::cout << "thirteen" << std::endl;
   std::fstream checkpoint_region;
-  std::cout << "fourteen" << std::endl;
+  //std::cout << "fourteen" << std::endl;
   checkpoint_region.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::in | std::ios::out);
-  std::cout << "fifteen" << std::endl;
+  //std::cout << "fifteen" << std::endl;
   checkpoint_region.seekp(inode_number/BLOCK_SIZE);
-  std::cout << "sixteen" << std::endl;
+  //std::cout << "sixteen" << std::endl;
   checkpoint_region.write(reinterpret_cast<const char*>(&last_imap_pos+BLOCK_SIZE), BLOCK_SIZE);
-  std::cout << "seventeen" << std::endl;
+  //std::cout << "seventeen" << std::endl;
   //SEEK to inode_number/BLOCK_SIZE
   //WRITE   last_imap_pos+BLOCK_SIZE, BLOCK_SIZE
   //find available space gives you the last imap position, so add 1024 to it to get to where you write to
