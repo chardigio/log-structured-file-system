@@ -252,6 +252,9 @@ void removeLineFromFilenameMap(std::string lfs_filename){
     if(fileName != lfs_filename){
       tempFile << fileName << " " << inode_number << std::endl;
     }
+    else{
+      tempFile << std::endl;
+    }
   }
   filename_map.clear();
   filename_map.seekg(0, std::ios::beg);
