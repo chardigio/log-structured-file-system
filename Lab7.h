@@ -23,7 +23,7 @@ unsigned int SEGMENT_NO = 1;
 /*
 Lab 7:
  - import
- - remove
+ - remove (BUG)
  - list
  - exit
  - restart (read in the files and list them after

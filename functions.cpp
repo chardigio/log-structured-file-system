@@ -28,19 +28,14 @@ bool filenameIsUnique(std::string lfs_filename){
 void copyImapBlock(unsigned int address, unsigned int fragment_no){
   unsigned int segment_no = (address / BLOCK_SIZE) + 1;
   unsigned int block_start_pos = (address % BLOCK_SIZE) * BLOCK_SIZE;
-  //printf("bspos:%u\n", block_start_pos/BLOCK_SIZE);
   std::string segment_name = "DRIVE/SEGMENT" + std::to_string(segment_no);
   std::fstream segment_file;
   segment_file.open(segment_name.c_str(), std::fstream::binary | std::ios::in);
 
   segment_file.seekg(block_start_pos);
-  //std::cout << "tellg: " << segment_file.tellg() << std::endl;
   char buffer[BLOCK_SIZE];
   segment_file.read(buffer, BLOCK_SIZE);
-  //printf("BUFF: %c\n", buffer[0]);
-  //printf("BUFF: %c\n", buffer[1]);
   std::memcpy(&IMAP[fragment_no*BLOCK_SIZE], buffer, BLOCK_SIZE);
-  //printf("imap: %u\n", IMAP[0]);
   segment_file.close();
 }
 
@@ -65,7 +60,6 @@ void copyInImap(){
   cpr.close();
 
   for (unsigned int fragment_no = 0; fragment_no < addresses.size(); ++fragment_no){
-    //printf("adr: %u\n", addresses[fragment_no] % 1024);
     copyImapBlock(addresses[fragment_no], fragment_no);
   }
 }
@@ -79,7 +73,6 @@ void copyInSegment(){
     char buffer[BLOCK_SIZE];
     segment_file.read(buffer, BLOCK_SIZE);
     std::memcpy(SEGMENT[i], buffer, BLOCK_SIZE);
-    //std::cout << "segment[i]: " << SEGMENT[i] << std::endl;
   }
 
   segment_file.close();
@@ -89,8 +82,6 @@ void writeOutSegment(){
   std::string segment_name = "DRIVE/SEGMENT" + std::to_string(SEGMENT_NO);
   std::fstream segment_file;
   segment_file.open(segment_name.c_str(), std::fstream::binary | std::ios::out);
-
-  //segment_file.write(reinterpret_cast<const char*>(&SEGMENT), SEG_SIZE); //not sure why this doesnt work
 
   for (int i = 0; i < BLOCK_SIZE; ++i)
     segment_file.write(reinterpret_cast<const char*>(&SEGMENT[i]), BLOCK_SIZE);
@@ -127,8 +118,6 @@ void findAvailableSpace(unsigned int& segment_no, unsigned int& last_imap_pos){
   }
 
   cpr.close();
-
-  //for (int i = 0; i < addresses.size(); ++i) std::cout << addresses[i] << std::endl;
 
   if (addresses.size() > 0){
     auto most_recent_imap_pos = std::max_element(std::begin(addresses), std::end(addresses));
@@ -171,8 +160,6 @@ void updateFilenameMap(unsigned int inode_number, std::string lfs_filename){
   }
   filename_map.close();
 
-  //this is ratchet stop it charlie (but i dont know why seek breaks) (yeah me neither dude)
-
   std::fstream filename_map2("DRIVE/FILENAME_MAP", std::ios::in | std::ios::out);
   filename_map2.seekp(file_pos);
   while (line_no++ < inode_number)
@@ -184,13 +171,10 @@ void updateFilenameMap(unsigned int inode_number, std::string lfs_filename){
 }
 
 std::string getFileSize(std::string inode_string){
-  //printf("\n%s\n", "getFileSize");
   const char * inode_num = inode_string.c_str();
-  //printf("i#%s\n", inode_num);
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int block_position = IMAP[inode_number];
-  //printf("bpos: %d; ", block_position);
   std::string fileSize;
   if(block_position == -1){
     //the node doesn't exit
@@ -199,51 +183,22 @@ std::string getFileSize(std::string inode_string){
   }
 
   unsigned int segment_location = inode_number/BLOCK_SIZE;
-  //std::cout << "segloc: " << segment_location << std::endl;
   if(SEGMENT_NO == (segment_location+1)){
-    //std::cout << "in if!" << std::endl;
-    //std::cout << SEGMENT[block_position] << std::endl;
     std::string tmp = (char*) (SEGMENT[block_position]);
-    //std::cout << tmp << std::endl;
-    //std::cout << "twelve" << std::endl;
-    //std::cout << "tmp: " << tmp << std::endl;
     fileSize = split(tmp)[1];
-    //std::cout << "thirteen" << std::endl;
-    //std::cout << "fileSz: " << fileSz << std::endl;
   }
   else{
-    //std::cout << "in else; ";
-    //std::cout <<"two" << std::endl;
     std::string segment = "SEGMENT" + std::to_string(segment_location + 1);
-    //std::ifstream disk_segment("DRIVE/"+segment);
     std::fstream disk_segment;
     disk_segment.open("DRIVE/"+segment, std::ios::binary | std::ios::in);
-    //std::cout << "three" << std::endl;
     unsigned int block_in_segment = block_position % BLOCK_SIZE;
-    //std::cout << "four" << std::endl;
     char block[BLOCK_SIZE];
-    //std::cout << "five" << std::endl;
-    //std::cout << "block: " << block << std::endl;
     disk_segment.seekg(block_in_segment * BLOCK_SIZE);
-    //std::cout << "six" << std::endl;
     char buffer[BLOCK_SIZE];
-    //std::cout << "seven" << std::endl;
     disk_segment.read(buffer, BLOCK_SIZE);
-    //std::cout << "eight" << std::endl;
-    //block should be the inode
-    //std::cout << "block: " << block << std::endl;
     std::memcpy(&block, &buffer, BLOCK_SIZE);
-    //std::cout << "nine" << std::endl;
     std::string block_string(block);
-    //std::string block_string = block;
-    //std::cout << "ten" << std::endl;
-    //printf("blockcstr: %s\n", block);
-    //std::cout << "block string: " << block_string << std::endl;
-    //std::cout << "the problem: " << block_string << std::endl;
     fileSize = split(block_string)[1];
-    //std::cout << "file size: " << fileSize << std::endl;
-    //std::cout << "eleven" << std::endl;
-    //use block to get the file size
   }
 
   return fileSize;
