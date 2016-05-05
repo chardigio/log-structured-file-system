@@ -8,6 +8,11 @@ void import(std::string filename, std::string lfs_filename) {
     return;
   }
 
+  if (!filenameIsUnique(lfs_filename)){
+    std::cout << "Duplicate filename." << std::endl;
+    return;
+  }
+
   //get input file length
   in.seekg(0, std::ios::end);
   int in_size = in.tellg();

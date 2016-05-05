@@ -9,6 +9,22 @@ std::vector<std::string> split(const std::string &str) {
   return tokens;
 }
 
+bool filenameIsUnique(std::string lfs_filename){
+  std::ifstream filename_map("DRIVE/FILENAME_MAP");
+
+  std::string token;
+  bool is_unique = true;
+
+  while(filename_map >> token){
+    if(token == lfs_filename)
+      is_unique = false;
+  }
+
+  filename_map.close();
+
+  return is_unique;
+}
+
 void copyImapBlock(unsigned int address, unsigned int fragment_no){
   unsigned int segment_no = (address / BLOCK_SIZE) + 1;
   unsigned int block_start_pos = (address % BLOCK_SIZE) * BLOCK_SIZE;
@@ -234,14 +250,14 @@ std::string getFileSize(std::string inode_string){
 }
 
 void printFileNames(){
-	std::ifstream filenames("DRIVE/FILENAME_MAP");
-	std::string line;
-	while(getline(filenames, line)){
+  std::ifstream filenames("DRIVE/FILENAME_MAP");
+  std::string line;
+  while(getline(filenames, line)){
     if (line.length() > 1){
-  		std::vector<std::string> components = split(line);
-  		std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
+      std::vector<std::string> components = split(line);
+      std::cout << split(line)[0] << ", " << getFileSize(split(line)[1]) << std::endl;
     }
-	}
+  }
 }
 
 void removeLineFromFilenameMap(std::string lfs_filename){
