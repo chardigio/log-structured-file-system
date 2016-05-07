@@ -97,15 +97,66 @@ void remove(std::string lfs_filename) {
 }
 
 void cat(std::string lfs_filename) {
-  //nothing
+  std::fstream filename_map;
+  std::string line;
+  std::string inode_string;
+  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
+  while(getline(filename_map, line)){
+    if(line.length() > 1){
+      if(lfs_filename.compare(split(line)[0]) == 0){
+        inode_string = split(line)[1];
+      }
+    }
+  }
+  const char * inode_num = inode_string.c_str();
+  int inode_number_int = atoi(inode_num);
+  unsigned int inode_number = (unsigned int) inode_number_int;
+  unsigned int blockPos = IMAP[inode_number];
+
+  /*
+  1. get the inode number from the file map
+  2. get the block position from the imap
+  3. seekg to the location in the segment and read the contents of the file out onto the screen
+  */
+
+  
 }
 
 void display(std::string lfs_filename, std::string amount, std::string start) {
-  //nothing
+  std::fstream filename_map;
+  std::string line;
+  std::string inode_string;
+  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
+  while(getline(filename_map, line)){
+    if(line.length() > 1){
+      if(lfs_filename.compare(split(line)[0]) == 0){
+        inode_string = split(line)[1];
+      }
+    }
+  }
+  const char * inode_num = inode_string.c_str();
+  int inode_number_int = atoi(inode_num);
+  unsigned int inode_number = (unsigned int) inode_number_int;
+  unsigned int blockPos = IMAP[inode_number];
+  
 }
 
 void overwrite(std::string lfs_filename, std::string amount, std::string start, std::string character) {
-  //nothing
+  std::fstream filename_map;
+  std::string line;
+  std::string inode_string;
+  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
+  while(getline(filename_map, line)){
+    if(line.length() > 1){
+      if(lfs_filename.compare(split(line)[0]) == 0){
+        inode_string = split(line)[1];
+      }
+    }
+  }
+  const char * inode_num = inode_string.c_str();
+  int inode_number_int = atoi(inode_num);
+  unsigned int inode_number = (unsigned int) inode_number_int;
+  unsigned int blockPos = IMAP[inode_number];
 }
 
 void list() {

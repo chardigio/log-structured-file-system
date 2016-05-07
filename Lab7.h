@@ -36,4 +36,23 @@ Program 2:
  - display
  - overwrite
  - segment cleaning
+
+ so what's up with the segment summary???
+ -every segment has a segment summary (duh?)
+ -8 bytes at the beginning of memory
+ -there is a space for each block in the segment
+ What goes in each "space"? (I say space cause I don't know how big 8 bytes really is)
+ for each inode: <inode number, -1> (the -1 tags the pair as an inode)
+ for each imap piece: <128, 0-39> (the 128 tags the pair as a piece of the imap, the 0-39 says which imap segment /40 it is)
+ for each data member: <inode, logical block # (block position)>
+
+ btw the segment summary needs to be built as each file is imported
+
+ AND THEN: 
+ 1. the number of segments to clean are specified
+ 2. for each segment that is being used and is going to be cleaned:
+ 	create a copy of the segment and iterate through the map to decide what to copy over
+ 	if the logical block number (block position) associated with the data member points to the location in memory it says it does, 
+ 	then copy it over. If it's a -1 or something then don't.
+ 3. you should end up with less segments in the end
 */
