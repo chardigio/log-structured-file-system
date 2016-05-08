@@ -1,128 +1,124 @@
-#include "functions.cpp"
+#include "Functions.cpp"
 
 void import(std::string filename, std::string lfs_filename) {
-  //open file that we're importing
   std::ifstream in(filename);
   if (!in.good()){
     std::cout << "Could not find file." << std::endl;
     return;
   }
 
-  if (!filenameIsUnique(lfs_filename)){
+  if (lfs_filename.length() > 251){
+    std::cout << "Filename too large." << std::endl;
+    return;
+  }
+
+  if (getInodeNumberOfFile(lfs_filename) != (unsigned int) -1){
     std::cout << "Duplicate filename." << std::endl;
     return;
   }
+
+  int inode_number = nextInodeNumber();
+
+  if (inode_number == -1) {
+    std::cout << "Max files reached." << std::endl;
+    return;
+  }
+  updateFilemap(inode_number, lfs_filename);
 
   //get input file length
   in.seekg(0, std::ios::end);
   int in_size = in.tellg();
   in.seekg(0, std::ios::beg);
 
-  //find first available block and see what segment it is
-  unsigned int last_imap_pos;
-  findAvailableSpace(SEGMENT_NO, last_imap_pos);
-  unsigned int data_block_start_pos;
-
-  if (last_imap_pos > SEG_SIZE){ // if this is our first time importing
-    data_block_start_pos = 0;
-  }else if (BLOCK_SIZE - last_imap_pos%BLOCK_SIZE < ((in_size+BLOCK_SIZE-1)/BLOCK_SIZE) + 2) { // not enough space left in segment
+  if ((in_size / BLOCK_SIZE) + 2 > BLOCKS_IN_SEG - AVAILABLE_BLOCK) { // not enough space left in segment
     writeOutSegment();
     SEGMENT_NO++;
-    data_block_start_pos = 0;
-  }else{
-    data_block_start_pos = last_imap_pos + 1;
+    AVAILABLE_BLOCK = 0;
   }
 
   //read from file we're importing and write it in blocks of SEGMENT
-  unsigned int i;
-  for (i = 0; i*BLOCK_SIZE < in_size; ++i) {
-    char block[BLOCK_SIZE];
-    in.read(block, BLOCK_SIZE);
-    std::memcpy(SEGMENT[data_block_start_pos+i], block, BLOCK_SIZE);
+  char buffer[in_size];
+  in.read(buffer, in_size);
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], buffer, in_size);
+
+  //inode blocks
+  inode meta;
+  for (int i = 0; i < lfs_filename.length(); ++i){
+    meta.filename[i] = lfs_filename[i];
+  }
+  meta.filename[lfs_filename.length()] = '\0';
+  meta.size = in_size;
+  for (int i = 0; i < in_size/BLOCK_SIZE + 1; ++i){
+    meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1)*BLOCKS_IN_SEG;
+    AVAILABLE_BLOCK++;
   }
 
-  // inode block string formatting (filename size(inbytes) block1 block2 block3 ... blockN)
-  std::string inode_meta = lfs_filename + " " + std::to_string(in_size) + " ";
-  for (int j = 0; j < i; ++j)
-    inode_meta += std::to_string(data_block_start_pos + j) + " ";
+  //write that inode to the next BLOCK
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &meta, sizeof(inode));
+  AVAILABLE_BLOCK++;
 
-  //write that string to the next BLOCK
-  std::memcpy(SEGMENT[data_block_start_pos+i], inode_meta.c_str(), inode_meta.length());
+  //update imap (which also updates checkpoint region)
+  updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
 
-  //look for next sequential inode number
-  int inode_number = nextInodeNumber();
-
-  //update filename map
-  updateFilenameMap(inode_number, lfs_filename);
-
-  //write old imap and new inode number to next block
-  unsigned int inode_block_no = data_block_start_pos + i;
-  unsigned int imap_block_no = inode_block_no + 1;
-
-  IMAP[inode_number] = inode_block_no;
-  printf("IMAP[%u] = %u\n", inode_number, inode_block_no);
-  unsigned int imap_fragment_no = (inode_number)/BLOCK_SIZE; //the block of the imap we need to copy to the segment
-  std::memcpy(SEGMENT[imap_block_no], &IMAP[imap_fragment_no*BLOCK_SIZE], BLOCK_SIZE);
-
-  //update checkpoint region
-  updateCR(imap_fragment_no, imap_block_no+(SEGMENT_NO-1)*BLOCK_SIZE);
-  printf("Reached: %d\n", imap_block_no);
+  printf("Next free: %d\n", AVAILABLE_BLOCK);
 
   in.close();
 }
 
 void remove(std::string lfs_filename) {
-  std::fstream filename_map;
-  std::string line;
-  std::string inode_string;
-  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
-  while(getline(filename_map, line)){
-    if(line.length() > 1){
-      if(lfs_filename.compare(split(line)[0]) == 0){
-        inode_string = split(line)[1];
-        removeLineFromFilenameMap(lfs_filename);
-      }
-    }
+  unsigned int inode_number = getInodeNumberOfFile(lfs_filename);
+
+  if (inode_number == (unsigned int) -1){
+    std::cout << "Could not find file." << std::endl;
+    return;
   }
-  const char * inode_num = inode_string.c_str();
-  int inode_number_int = atoi(inode_num);
-  unsigned int inode_number = (unsigned int) inode_number_int;
-  IMAP[inode_number] = -1;
-  unsigned int last_imap_pos;
-  findAvailableSpace(SEGMENT_NO, last_imap_pos);
-  last_imap_pos++;
-  last_imap_pos *= BLOCK_SIZE;
-  std::memcpy(SEGMENT[(last_imap_pos%BLOCK_SIZE)], &IMAP[inode_number/BLOCK_SIZE], BLOCK_SIZE);
-  updateCR(inode_number/BLOCK_SIZE, last_imap_pos/BLOCK_SIZE);
+
+  std::fstream filemap("DRIVE/FILEMAP", std::ios::binary | std::ios::in | std::ios::out);
+
+  filemap.seekp(inode_number*FILEMAP_BLOCK_SIZE);
+  filemap.write(INVALID, 1);
+
+  filemap.close();
+
+  updateImap(inode_number, (unsigned int) -1);
 }
 
 void cat(std::string lfs_filename) {
-  std::fstream filename_map;
-  std::string line;
-  std::string inode_string;
-  filename_map.open("DRIVE/FILENAME_MAP", std::ios::binary | std::ios::in);
-  while(getline(filename_map, line)){
-    if(line.length() > 1){
-      if(lfs_filename.compare(split(line)[0]) == 0){
-        inode_string = split(line)[1];
-      }
-    }
+  unsigned int inode_number = getInodeNumberOfFile(lfs_filename);
+
+  if (inode_number == (unsigned int) -1){
+    std::cout << "Could not find file." << std::endl;
+    return;
   }
-  const char * inode_num = inode_string.c_str();
-  int inode_number_int = atoi(inode_num);
-  unsigned int inode_number = (unsigned int) inode_number_int;
-  unsigned int blockPos = IMAP[inode_number];
 
-  /*
-  1. get the inode number from the file map
-  2. get the block position from the imap
-  3. seekg to the location in the segment and read the contents of the file out onto the screen
-  */
+  unsigned int global_block_pos = IMAP[inode_number];
+  unsigned int segment_no = (global_block_pos / BLOCKS_IN_SEG) + 1;
+  unsigned int local_block_pos = (global_block_pos % BLOCKS_IN_SEG) * BLOCK_SIZE;
 
-  
+  inode meta;
+
+  if (segment_no != SEGMENT_NO){
+    std::fstream filemap("DRIVE/SEGMENT"+std::to_string(segment_no), std::ios::binary | std::ios::in);
+
+    filemap.seekg(local_block_pos);
+    char buffer[BLOCK_SIZE];
+    filemap.read(buffer, BLOCK_SIZE);
+
+    std::memcpy(&meta, buffer, sizeof(inode));
+
+    filemap.close();
+  }else{
+    std::memcpy(&meta, &SEGMENT[local_block_pos], sizeof(inode));
+  }
+
+  int no_data_blocks = (meta.size / BLOCK_SIZE) + 1;
+
+  for (int i = 0; i < no_data_blocks; ++i)
+    printBlock(meta.block_locations[i], meta.size, (i == no_data_blocks - 1));
 }
 
 void display(std::string lfs_filename, std::string amount, std::string start) {
+  /*
   std::fstream filename_map;
   std::string line;
   std::string inode_string;
@@ -138,10 +134,11 @@ void display(std::string lfs_filename, std::string amount, std::string start) {
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int blockPos = IMAP[inode_number];
-  
+  */
 }
 
 void overwrite(std::string lfs_filename, std::string amount, std::string start, std::string character) {
+  /*
   std::fstream filename_map;
   std::string line;
   std::string inode_string;
@@ -157,13 +154,29 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   int inode_number_int = atoi(inode_num);
   unsigned int inode_number = (unsigned int) inode_number_int;
   unsigned int blockPos = IMAP[inode_number];
+  */
 }
 
 void list() {
-  printFileNames();
+  std::ifstream filemap("DRIVE/FILEMAP");
+
+  for (int i = 0; i < MAX_FILES; ++i){
+    filemap.seekg(i*FILEMAP_BLOCK_SIZE);
+    char valid[1];
+    filemap.read(valid, 1);
+
+    if (valid[0]) {
+      char filename[FILEMAP_BLOCK_SIZE-4];
+      filemap.read(filename, FILEMAP_BLOCK_SIZE-4);
+
+      printf("%s %d\n", filename, getFileSize(i));
+    }
+  }
+
+  filemap.close();
 }
 
 void exit() {
   writeOutSegment();
-	exit(0);
+  exit(0);
 }

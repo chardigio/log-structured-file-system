@@ -14,7 +14,8 @@ void initSegments(){
     outs[i].open(filename, std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
     char true_zero = 0;
-    for (int j = 0; j < SEG_SIZE; ++j) outs[i] << true_zero;
+    for (int j = 0; j < SEG_SIZE; ++j)
+      outs[i] << true_zero;
 
     outs[i].close();
   }
@@ -25,16 +26,39 @@ void initCheckpointRegion(){
   out.open("DRIVE/CHECKPOINT_REGION", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
   unsigned int neg1 = -1;
-  for (int j = 0; j < IMAP_BLOCKS; ++j) out.write(reinterpret_cast<const char*>(&neg1), 4);
+  for (int i = 0; i < IMAP_BLOCKS; ++i)
+    out.write(reinterpret_cast<const char*>(&neg1), 4);
 
   out.close();
 }
 
 void initFilenameMap(){
   std::ofstream out;
-  out.open("DRIVE/FILENAME_MAP", std::ofstream::out | std::ofstream::trunc);
+  out.open("DRIVE/FILEMAP", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
+
+  char true_zero = 0;
+  for (int i = 0; i < FILEMAP_BLOCK_SIZE * MAX_FILES; ++i)
+    out << true_zero;
 
   out.close();
+}
+
+void makeTestFiles(){
+  std::ofstream out1;
+  out1.open("s", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
+
+  for (int i = 0; i < BLOCK_SIZE/5; ++i)
+    out1 << (char) (i % 256);
+
+  out1.close();
+
+  std::ofstream out2;
+  out2.open("b", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
+
+  for (int i = 0; i < BLOCK_SIZE*120; ++i)
+    out2 << (char) (i % 256);
+
+  out2.close();
 }
 
 int main(int argc, char const *argv[]){
@@ -42,6 +66,7 @@ int main(int argc, char const *argv[]){
   initSegments();
   initCheckpointRegion();
   initFilenameMap();
+  makeTestFiles(); // shortcutplsdelete
   printf("%s\n", "Drive created.");
   return 0;
 }

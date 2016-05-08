@@ -11,10 +11,10 @@ DriveLink: DriveInit.o
 	g++ -std=c++11 -g DriveInit.o -o DriveInit
 
 drive: DriveLink
-	rm -rf DRIVE/;
 	./DriveInit
 
 clean:
-	rm -f *.o *~ *.swp Lab7 DriveInit
+	rm -f *.o *~ *.swp Lab7 DriveInit s b;
+	rm -rf DRIVE/;
 
 again:	clean drive all

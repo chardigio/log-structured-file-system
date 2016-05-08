@@ -11,7 +11,7 @@
 *2. make drive
 *3. ./lab7
 
-OR 
+OR
 
 *1. make again
 *2. ./lab7
