@@ -84,10 +84,12 @@ void readInImap(){
 }
 
 void writeOutSegment(){
-  std::string segment_name = "DRIVE/SEGMENT" + std::to_string(SEGMENT_NO);
-  std::fstream segment_file(segment_name, std::fstream::binary | std::ios::out);
+  std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::out);
 
-  segment_file.write(SEGMENT, SEG_SIZE); //if this doesnt give us problems were lit
+  segment_file.write(SEGMENT, SEG_SIZE);
+
+  SEGMENT_NO++;
+  AVAILABLE_BLOCK = 0;
 
   segment_file.close();
 }
@@ -131,11 +133,8 @@ void updateCR(unsigned int fragment, unsigned int block_position){
 }
 
 void updateImap(unsigned int inode_number, unsigned int block_position){
-  if (AVAILABLE_BLOCK == BLOCKS_IN_SEG){
+  if (AVAILABLE_BLOCK == BLOCKS_IN_SEG)
     writeOutSegment();
-    SEGMENT_NO++;
-    AVAILABLE_BLOCK = 0;
-  }
 
   IMAP[inode_number] = block_position;
 
@@ -200,27 +199,63 @@ unsigned int getInodeNumberOfFile(std::string lfs_filename){
   return (unsigned int) -1;
 }
 
-void printBlock(unsigned int global_block_pos, unsigned int file_size, bool last_block){
+void printBlock(unsigned int global_block_pos, unsigned int start_byte, unsigned int end_byte, bool first_block, bool last_block){
   unsigned int segment_no = (global_block_pos / BLOCKS_IN_SEG) + 1;
   unsigned int local_block_pos = (global_block_pos % BLOCKS_IN_SEG) * BLOCK_SIZE;
+  if (first_block) local_block_pos += start_byte;
 
-  std::fstream filemap("DRIVE/SEGMENT"+std::to_string(segment_no), std::ios::binary | std::ios::in);
+  unsigned int buffer_size;
+  if (first_block && last_block) buffer_size = end_byte - start_byte;
+  else if (last_block) buffer_size = end_byte % BLOCK_SIZE;
+  else if (first_block) buffer_size = BLOCK_SIZE - start_byte;
+  else buffer_size = BLOCK_SIZE;
 
-  unsigned int buffer_size = (last_block) ? (file_size % BLOCK_SIZE) : BLOCK_SIZE;
   char buffer[buffer_size];
 
   if (segment_no != SEGMENT_NO){
-    filemap.seekg(local_block_pos);
+    std::fstream seg_file("DRIVE/SEGMENT"+std::to_string(segment_no), std::ios::binary | std::ios::in);
 
-    filemap.read(buffer, buffer_size);
+    seg_file.seekg(local_block_pos);
+    seg_file.read(buffer, buffer_size);
 
-    filemap.close();
+    seg_file.close();
   }else{
     std::memcpy(buffer, &SEGMENT[local_block_pos], buffer_size);
   }
 
-  for (int i = 0; i < buffer_size; ++i){
+  for (int i = 0; i < buffer_size; ++i)
     printf("%c", buffer[i]);
-  }
+
   if (last_block) printf("\n");
+
+  /*
+  printf("local_block_pos: %u\n", local_block_pos);
+  printf("buffer_size: %u\n", buffer_size);
+  printf("start_byte: %u\n", start_byte);
+  printf("end_byte: %u\n", end_byte);
+  */
+}
+
+inode getInode(unsigned int inode_number){
+  unsigned int global_block_pos = IMAP[inode_number];
+  unsigned int segment_no = (global_block_pos / BLOCKS_IN_SEG) + 1;
+  unsigned int local_block_pos = (global_block_pos % BLOCKS_IN_SEG) * BLOCK_SIZE;
+
+  inode meta;
+
+  if (segment_no != SEGMENT_NO){
+    std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(segment_no), std::ios::binary | std::ios::in);
+
+    segment_file.seekg(local_block_pos);
+    char buffer[BLOCK_SIZE];
+    segment_file.read(buffer, BLOCK_SIZE);
+
+    std::memcpy(&meta, buffer, sizeof(inode));
+
+    segment_file.close();
+  }else{
+    std::memcpy(&meta, &SEGMENT[local_block_pos], sizeof(inode));
+  }
+
+  return meta;
 }
