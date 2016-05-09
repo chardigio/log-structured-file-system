@@ -17,7 +17,7 @@ void import(std::string filename, std::string lfs_filename) {
     return;
   }
 
-  int inode_number = nextInodeNumber();
+  unsigned int inode_number = nextInodeNumber();
 
   if (inode_number == -1) {
     std::cout << "Max files reached." << std::endl;
@@ -46,9 +46,10 @@ void import(std::string filename, std::string lfs_filename) {
   }
   meta.filename[lfs_filename.length()] = '\0';
   meta.size = in_size;
-  for (int i = 0; i < in_size/BLOCK_SIZE + 1; ++i){
+  for (unsigned int i = 0; i < in_size/BLOCK_SIZE + 1; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1)*BLOCKS_IN_SEG;
-    SEGMENT_SUMMARY[AVAILABLE_BLOCK] = {inode_number, i};
+    SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = inode_number;
+    SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = i;
     AVAILABLE_BLOCK++;
   }
 

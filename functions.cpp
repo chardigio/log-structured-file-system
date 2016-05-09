@@ -260,8 +260,9 @@ inode getInode(unsigned int inode_number){
   return meta;
 }
 
- void writeInode(const inode &node, int inode_number){
-  SEGMENT_SUMMARY[AVAILABLE_BLOCK] = {inode_number, (unsigned int)-1};
+ void writeInode(const inode &node, unsigned int inode_number){
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] =  inode_number;
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = (unsigned int) -1;
 
   //write that inode to the next BLOCK
   std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &node, sizeof(inode));
