@@ -30,7 +30,7 @@ void import(std::string filename, std::string lfs_filename) {
   int in_size = in.tellg();
   in.seekg(0, std::ios::beg);
 
-  if ((in_size / BLOCK_SIZE) + 2 > BLOCKS_IN_SEG - AVAILABLE_BLOCK) { // not enough space left in segment
+  if ((in_size / BLOCK_SIZE) + 3 > BLOCKS_IN_SEG - AVAILABLE_BLOCK) { // not enough space left in segment
     writeOutSegment();
     SEGMENT_NO++;
     AVAILABLE_BLOCK = 0;
