@@ -38,6 +38,7 @@ void import(std::string filename, std::string lfs_filename) {
   in.read(buffer, in_size);
   std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], buffer, in_size);
 
+
   //inode blocks
   inode meta;
   for (int i = 0; i < lfs_filename.length(); ++i){
@@ -47,12 +48,11 @@ void import(std::string filename, std::string lfs_filename) {
   meta.size = in_size;
   for (int i = 0; i < in_size/BLOCK_SIZE + 1; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1)*BLOCKS_IN_SEG;
+    SEGMENT_SUMMARY[AVAILABLE_BLOCK] = {inode_number, i};
     AVAILABLE_BLOCK++;
   }
 
-  //write that inode to the next BLOCK
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &meta, sizeof(inode));
-  AVAILABLE_BLOCK++;
+  writeInode(meta, inode_number);
 
   //update imap (which also updates checkpoint region)
   updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
@@ -177,11 +177,7 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
     AVAILABLE_BLOCK++;
   }
 
-  //write that inode to the next BLOCK
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &meta, sizeof(inode));
-  AVAILABLE_BLOCK++;
-
-  updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
+  writeInode(meta, inode_number);
 
   /*
   printf("%c\n", character);

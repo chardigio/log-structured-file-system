@@ -19,8 +19,10 @@
 #define MAX_FILESIZE 10
 #define MAX_DATA_BLOCKS 128
 #define MAX_FILES 10240 // 10K
+#define SUMMARY_SIZE 8
 #define FILEMAP_BLOCK_SIZE 256 // first byte: 0/1 valid byte (0 means free, 1 means used),
                                // next 254: filename, last: null terminator
+
 
 char INVALID[1] = {0};
 char VALID[1] = {127}; // used to tag filenames in the filemap
@@ -28,7 +30,8 @@ unsigned int IMAP[IMAP_BLOCKS*BLOCK_SIZE]; // entire imap
 char SEGMENT[SEG_SIZE]; // current segment in memory
 unsigned int SEGMENT_NO = 1; // current segment 1-32
 unsigned int AVAILABLE_BLOCK = 0; // next free block on current segment 0-1023
-
+char cleanArray[32]; //0 = clean 1 = not clean??
+unsigned int SEGMENT_SUMMARY[BLOCK_SIZE* SUMMARY_SIZE][2];
 
 typedef struct {
   char filename[FILEMAP_BLOCK_SIZE - 1];
@@ -74,3 +77,11 @@ Program 2:
   then copy it over. If it's a -1 or something then don't.
  3. you should end up with less segments in the end
 */
+
+  /*
+ Notes from lecture 9 May:
+ Checkpoint region always in memory
+ keep all the stuff in memory (checkpoint region, etc...?)
+ track which segments are clean
+ array[32] clean/not clean
+ */
