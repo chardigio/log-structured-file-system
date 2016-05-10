@@ -3,6 +3,7 @@
 int shortcut_filename_ext = 0; //just bc lazy (DELETE!)
 
 void restart(){
+  readInCheckpointRegion();
   findNextAvailableBlock();
   printf("Current Segment: %d\n", SEGMENT_NO);
   readInSegment();
@@ -20,6 +21,7 @@ void parseLine(std::string line) {
   else if (command[0] == "display"   && command.size() == 4) display(command[1], command[2], command[3]);
   else if (command[0] == "overwrite" && command.size() == 5) overwrite(command[1], command[2], command[3], command[4]);
   else if (command[0] == "list"      && command.size() == 1) list();
+  else if (command[0] == "clean"     && command.size() == 2) clean(command[1]);
   else if (command[0] == "exit"      && command.size() == 1) exit();
   else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
   else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)

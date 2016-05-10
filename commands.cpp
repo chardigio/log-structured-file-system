@@ -7,7 +7,7 @@ void import(std::string filename, std::string lfs_filename) {
     return;
   }
 
-  if (lfs_filename.length() > 251){
+  if (lfs_filename.length() > 254){
     std::cout << "Filename too large." << std::endl;
     return;
   }
@@ -30,7 +30,7 @@ void import(std::string filename, std::string lfs_filename) {
   int in_size = in.tellg();
   in.seekg(0, std::ios::beg);
 
-  if ((in_size / BLOCK_SIZE) + 3 > BLOCKS_IN_SEG - AVAILABLE_BLOCK)
+  if ((in_size / BLOCK_SIZE) + 3 > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
     writeOutSegment();
 
   //read from file we're importing and write it in blocks of SEGMENT
@@ -46,7 +46,7 @@ void import(std::string filename, std::string lfs_filename) {
   }
   meta.filename[lfs_filename.length()] = '\0';
   meta.size = in_size;
-  for (unsigned int i = 0; i < in_size/BLOCK_SIZE + 1; ++i){
+  for (unsigned int i = 0; i <= in_size/BLOCK_SIZE; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1)*BLOCKS_IN_SEG;
     SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = inode_number;
     SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = i;
@@ -110,7 +110,7 @@ void display(std::string lfs_filename, std::string amount, std::string start) {
   int start_byte = std::stoi(start);
   int end_byte = std::stoi(amount) + start_byte;
 
-  for (int i = start_byte/BLOCK_SIZE; i < end_byte/BLOCK_SIZE + 1; ++i)
+  for (int i = start_byte/BLOCK_SIZE; i <= end_byte/BLOCK_SIZE; ++i)
     printBlock(meta.block_locations[i], start_byte, end_byte, (i == start_byte/BLOCK_SIZE), (i == end_byte/BLOCK_SIZE));
 }
 
@@ -132,7 +132,7 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   int end_block = end_byte / BLOCK_SIZE;
   int blocks_needed = end_block - start_block + 2;
 
-  if (blocks_needed > BLOCKS_IN_SEG - AVAILABLE_BLOCK)
+  if (blocks_needed > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
     writeOutSegment();
 
   char repeated_chars[std::stoi(amount)];
@@ -156,9 +156,8 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + start_byte], repeated_chars, std::stoi(amount));
 
   //perhaps copy some of the last block
-  int end_block_seg;
   if (end_byte < meta.size){
-    end_block_seg = (meta.block_locations[end_block] / BLOCKS_IN_SEG) + 1;
+    int end_block_seg = (meta.block_locations[end_block] / BLOCKS_IN_SEG) + 1;
     if (end_block_seg != SEGMENT_NO){
       char buffer[BLOCK_SIZE - end_byte];
       std::fstream end_block_seg_file("DRIVE/SEGMENT"+std::to_string(end_block_seg), std::ios::in | std::ios::out | std::ios::binary);
@@ -175,6 +174,8 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
 
   for (int i = start_block; i <= end_block; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1) * BLOCKS_IN_SEG;
+    SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = inode_number;
+    SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = i;
     AVAILABLE_BLOCK++;
   }
 
@@ -187,7 +188,7 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   printf("%d\n", start_block);
   printf("%d\n", end_block);
   printf("%d\n", start_block_seg);
-  printf("%d\n", end_block_seg);
+  //printf("%d\n", end_block_seg);
   printf("%d, %d\n", meta.size, meta.block_locations[0]);
   printf("%u\n", inode_number);
   printf("%d, %d ---\n", AVAILABLE_BLOCK, SEGMENT_NO);
@@ -204,8 +205,8 @@ void list() {
     filemap.read(valid, 1);
 
     if (valid[0]) {
-      char filename[FILEMAP_BLOCK_SIZE-4];
-      filemap.read(filename, FILEMAP_BLOCK_SIZE-4);
+      char filename[FILEMAP_BLOCK_SIZE-1];
+      filemap.read(filename, FILEMAP_BLOCK_SIZE-1);
 
       printf("%s %d\n", filename, getFileSize(i));
     }
@@ -214,7 +215,12 @@ void list() {
   filemap.close();
 }
 
+void clean(std::string amount) {
+  //satan
+}
+
 void exit() {
   writeOutSegment();
+  writeOutCheckpointRegion();
   exit(0);
 }

@@ -29,6 +29,10 @@ void initCheckpointRegion(){
   for (int i = 0; i < IMAP_BLOCKS; ++i)
     out.write(reinterpret_cast<const char*>(&neg1), 4);
 
+  char true_zero[1] = {0};
+  for (int i = 0; i < NO_SEGMENTS; ++i)
+    out.write(true_zero, 1);
+
   out.close();
 }
 

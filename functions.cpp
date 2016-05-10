@@ -9,36 +9,45 @@ std::vector<std::string> split(const std::string &str) {
   return tokens;
 }
 
-void findNextAvailableBlock(){
-  std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
+void readInCheckpointRegion(){
+  std::fstream cpr;
+  cpr.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
 
-  char current_address_str[4];
-  unsigned int new_current_address_int = 0;
-  int checks = 0;
-  std::vector<unsigned int> addresses;
+  char address_str[4];
+  unsigned int address_int = 0;
 
-  while ((new_current_address_int < SEG_SIZE) && ++checks < IMAP_BLOCKS){
-    cpr.read(current_address_str, 4);
-
-    std::memcpy(&new_current_address_int, &current_address_str, 4);
-
-    if (new_current_address_int < SEG_SIZE)
-      addresses.push_back(new_current_address_int);
+  for (int i = 0; i < IMAP_BLOCKS; ++i){
+    cpr.read(address_str, 4);
+    std::memcpy(&CHECKPOINT_REGION[i], address_str, 4);
   }
 
-  if (addresses.size() > 0){
-    auto most_recent_imap_pos = std::max_element(std::begin(addresses), std::end(addresses));
-    AVAILABLE_BLOCK = ((unsigned int) *most_recent_imap_pos) % BLOCK_SIZE;
-    SEGMENT_NO = 1+ ((unsigned int) *most_recent_imap_pos) / BLOCK_SIZE;
-  }
+  cpr.read(CLEAN_SEGMENTS, NO_SEGMENTS);
 
   cpr.close();
+}
+
+void findNextAvailableBlock(){
+  bool at_least_one_imap_piece = false;
+  unsigned int most_recent_imap_pos = 0;
+  for (int i = 0; i < IMAP_BLOCKS; ++i){
+    if (CHECKPOINT_REGION[i] != (unsigned int) -1 && CHECKPOINT_REGION[i] >= most_recent_imap_pos){
+      most_recent_imap_pos = CHECKPOINT_REGION[i];
+      at_least_one_imap_piece = true;
+    }
+  }
+
+  AVAILABLE_BLOCK = (at_least_one_imap_piece) ? (most_recent_imap_pos % BLOCK_SIZE) + 1 : 0;
+  SEGMENT_NO = 1 + most_recent_imap_pos / BLOCK_SIZE;
 }
 
 void readInSegment(){
   std::fstream segment_file("DRIVE/SEGMENT" + std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::in);
 
-  segment_file.read(SEGMENT, SEG_SIZE);
+  segment_file.read(SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+
+  char buffer[SUMMARY_BLOCKS * BLOCK_SIZE];
+  segment_file.read(buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
+  std::memcpy(&SEGMENT_SUMMARY, buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
 
   segment_file.close();
 }
@@ -58,40 +67,32 @@ void readInImapBlock(unsigned int address, unsigned int fragment_no){
 }
 
 void readInImap(){
-  std::fstream cpr;
-  cpr.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
-
-  char current_address_str[4];
-  unsigned int new_current_address_int = 0;
-  int checks = 0;
-  std::vector<unsigned int> addresses;
-
-  while (checks++ < IMAP_BLOCKS){
-    cpr.read(current_address_str, 4);
-
-    std::memcpy(&new_current_address_int, &current_address_str, 4);
-
-    if (new_current_address_int < SEG_SIZE)
-      addresses.push_back(new_current_address_int);
-    else
-      break;
+  for (unsigned int i = 0; i < IMAP_BLOCKS; ++i){
+    if (CHECKPOINT_REGION[i] != (unsigned int) -1)
+      readInImapBlock(CHECKPOINT_REGION[i], i);
   }
-
-  for (unsigned int i = 0; i < addresses.size(); ++i)
-    readInImapBlock(addresses[i], i);
-
-  cpr.close();
 }
 
 void writeOutSegment(){
   std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::out);
 
-  segment_file.write(SEGMENT, SEG_SIZE);
+  segment_file.write(SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  segment_file.write(reinterpret_cast<const char*>(&SEGMENT_SUMMARY), SUMMARY_BLOCKS * BLOCK_SIZE);
 
+  CLEAN_SEGMENTS[SEGMENT_NO - 1] = 1; //make sure it's dirty
   SEGMENT_NO++;
   AVAILABLE_BLOCK = 0;
 
   segment_file.close();
+}
+
+void writeOutCheckpointRegion(){
+  std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::fstream::binary | std::ios::out);
+
+  cpr.write(reinterpret_cast<const char*>(&CHECKPOINT_REGION), IMAP_BLOCKS * 4);
+  cpr.write(CLEAN_SEGMENTS, NO_SEGMENTS);
+
+  cpr.close();
 }
 
 unsigned int nextInodeNumber(){
@@ -123,13 +124,13 @@ void updateFilemap(unsigned int inode_number, std::string lfs_filename){
   filemap.close();
 }
 
-void updateCR(unsigned int fragment, unsigned int block_position){
-  std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
+void writeInode(const inode &node, unsigned int inode_number){
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] =  inode_number;
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = (unsigned int) -1;
 
-  cpr.seekp(fragment * 4);
-  cpr.write(reinterpret_cast<const char*>(&block_position), 4);
-
-  cpr.close();
+  //write that inode to the next BLOCK
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &node, sizeof(inode));
+  AVAILABLE_BLOCK++;
 }
 
 void updateImap(unsigned int inode_number, unsigned int block_position){
@@ -138,13 +139,16 @@ void updateImap(unsigned int inode_number, unsigned int block_position){
 
   IMAP[inode_number] = block_position;
 
-  unsigned int fragment = inode_number / BLOCKS_IN_SEG;
+  unsigned int fragment_no = inode_number / BLOCKS_IN_SEG;
 
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], &IMAP[fragment * BLOCK_SIZE], BLOCK_SIZE);
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], &IMAP[fragment_no * BLOCK_SIZE], BLOCK_SIZE);
+
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = -1;
+  SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = fragment_no;
+
+  CHECKPOINT_REGION[inode_number/BLOCKS_IN_SEG] = AVAILABLE_BLOCK + (SEGMENT_NO - 1) * BLOCKS_IN_SEG;
 
   AVAILABLE_BLOCK++;
-
-  updateCR(inode_number/BLOCKS_IN_SEG, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO - 1) * BLOCKS_IN_SEG);
 }
 
 int getFileSize(int inode_number){
@@ -259,12 +263,3 @@ inode getInode(unsigned int inode_number){
 
   return meta;
 }
-
- void writeInode(const inode &node, unsigned int inode_number){
-  SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] =  inode_number;
-  SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = (unsigned int) -1;
-
-  //write that inode to the next BLOCK
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK*BLOCK_SIZE], &node, sizeof(inode));
-  AVAILABLE_BLOCK++;
- }
