@@ -58,7 +58,8 @@ void import(std::string filename, std::string lfs_filename) {
   //update imap (which also updates checkpoint region)
   updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
 
-  printf("Next free: %d\n", AVAILABLE_BLOCK);
+  for (int i = AVAILABLE_BLOCK - meta.size/BLOCK_SIZE - 3; i < AVAILABLE_BLOCK; ++i)
+    printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 
   in.close();
 }
@@ -130,7 +131,7 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
 
   int start_block = start_byte / BLOCK_SIZE;
   int end_block = end_byte / BLOCK_SIZE;
-  int blocks_needed = end_block - start_block + 2;
+  int blocks_needed = end_block - start_block + 3;
 
   if (blocks_needed > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
     writeOutSegment();
@@ -180,6 +181,11 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   }
 
   writeInode(meta, inode_number);
+
+  updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
+
+  for (int i = AVAILABLE_BLOCK - blocks_needed; i < AVAILABLE_BLOCK; ++i)
+    printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 
   /*
   printf("%c\n", character);
