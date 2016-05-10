@@ -115,9 +115,10 @@ void display(std::string lfs_filename, std::string amount, std::string start) {
     printBlock(meta.block_locations[i], start_byte, end_byte, (i == start_byte/BLOCK_SIZE), (i == end_byte/BLOCK_SIZE));
 }
 
-void overwrite(std::string lfs_filename, std::string amount, std::string start, std::string character_string) {
+void overwrite(std::string lfs_filename, std::string amount_string, std::string start, std::string character_string) {
+  int amount = std::stoi(amount_string);
   int start_byte = std::stoi(start);
-  int end_byte = std::stoi(amount) + start_byte;
+  int end_byte = amount + start_byte;
   char character = character_string.c_str()[0];
 
   unsigned int inode_number = getInodeNumberOfFile(lfs_filename);
@@ -136,8 +137,8 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   if (blocks_needed > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
     writeOutSegment();
 
-  char repeated_chars[std::stoi(amount)];
-  for (int i = 0; i < std::stoi(amount); ++i)
+  char repeated_chars[amount];
+  for (int i = 0; i < amount; ++i)
     repeated_chars[i] = character;
 
   //copy some of the first block
@@ -154,7 +155,7 @@ void overwrite(std::string lfs_filename, std::string amount, std::string start, 
   }
 
   //copy the characters
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + start_byte], repeated_chars, std::stoi(amount));
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + start_byte], repeated_chars, amount);
 
   //perhaps copy some of the last block
   if (end_byte < meta.size){
@@ -221,8 +222,30 @@ void list() {
   filemap.close();
 }
 
-void clean(std::string amount) {
-  //satan
+void clean(std::string amount_string) {
+  int amount = std::stoi(amount_string);
+  char segments_to_clean[amount];
+  int j = 0; // index of segments_to_clean
+  for (int i = 0; i < NO_SEGMENTS && j < amount; ++i) {
+    if (CLEAN_SEGMENTS[i] == DIRTY)
+      segments_to_clean[j++] = i+1;
+  }
+
+  unsigned int** clean_summary = (unsigned int**) malloc(BLOCKS_IN_SEG * sizeof(int*) + (2 * (BLOCKS_IN_SEG * sizeof(int))));
+  initSegmentSummary(clean_summary);
+  char* clean_segment = (char*) malloc(ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  unsigned int next_available_block_clean = 0;
+  int clean_segment_no = segments_to_clean[0];
+  std::vector<inode> inodes;
+  std::set<int> fragments;
+
+  for (int i = 0; i < amount; i++){
+    CLEAN_SEGMENTS[segments_to_clean[i]] = CLEAN;
+    cleanSegment(segments_to_clean[i], clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
+  }
+
+  free(clean_summary);
+  free(clean_segment);
 }
 
 void exit() {
