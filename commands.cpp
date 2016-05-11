@@ -233,12 +233,14 @@ void clean(std::string amount_string) {
   }
 
   //unsigned int** clean_summary = (unsigned int**) malloc(BLOCKS_IN_SEG * sizeof(int*) + (2 * (BLOCKS_IN_SEG * sizeof(int))));
-  unsigned int clean_summary[BLOCKS_IN_SEG][2];
+  /*unsigned int clean_summary[BLOCKS_IN_SEG][2];
   for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
     for (int j = 0; j < 2; ++j){
       clean_summary[i][j] = (unsigned int) -1;
     }
-  }
+  }*/
+
+  unsigned int ** clean_summary = initLocalSegmentSummary();
   //initSegmentSummary(clean_summary);
   //char* clean_segment = (char*) malloc(ASSIGNABLE_BLOCKS * BLOCK_SIZE);
   char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE];
@@ -255,7 +257,6 @@ void clean(std::string amount_string) {
   }
 
   writeCleanSegment(clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
-
   findNextAvailableBlock();
   readInSegment();
 }
