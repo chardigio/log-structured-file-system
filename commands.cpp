@@ -1,4 +1,4 @@
-#include "Functions.cpp"
+#include "functions.cpp"
 
 void import(std::string filename, std::string lfs_filename) {
   std::ifstream in(filename);

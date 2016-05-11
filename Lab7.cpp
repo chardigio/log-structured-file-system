@@ -1,4 +1,4 @@
-#include "Commands.cpp"
+#include "commands.cpp"
 
 //int shortcut_filename_ext = 0;
 
