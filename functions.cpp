@@ -345,7 +345,7 @@ void cleanSegment(int dirty_segment_no, unsigned int clean_summary[BLOCKS_IN_SEG
 
       if (old_node.size != (unsigned int) -1 && old_node.block_locations[block_no] == (dirty_segment_no-1) * BLOCKS_IN_SEG + i) { //if data block is live
         //deal with imap piece
-        fragments.insert(inode_no / BLOCKS_IN_SEG);
+        fragments.insert(inode_no / (BLOCKS_IN_SEG / 4));
 
         //deal with inode
         bool duplicate_inode = false; // sees whether this inode was already in our vector
