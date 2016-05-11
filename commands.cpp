@@ -146,6 +146,11 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
     return;
   }
 
+  if(end_byte > MAX_DATA_BLOCKS*BLOCK_SIZE){
+    printf("Cannot specify a character amount greater than the max filesize.\n");
+    return;
+  }
+  
   int start_block = start_byte / BLOCK_SIZE;
   int end_block = end_byte / BLOCK_SIZE;
   int blocks_needed = end_block - start_block + 3;
@@ -206,6 +211,7 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
 }
 
 void list() {
+  std::cout << "Current Segment: " << SEGMENT_NO << std::endl;
   std::ifstream filemap("DRIVE/FILEMAP");
 
   for (int i = 0; i < MAX_FILES; ++i){
