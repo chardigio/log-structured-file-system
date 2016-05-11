@@ -20,22 +20,6 @@ void initSegmentSummary(unsigned int summary[BLOCKS_IN_SEG][2]){
 }
 */
 
-/*formerly known as initSegmentSummary(unsigned int **summary)*/
-unsigned int ** initLocalSegmentSummary(){
-  unsigned int ** clean_summary = new unsigned int*[BLOCKS_IN_SEG];
-  for (int i = 0; i < BLOCKS_IN_SEG; ++i)
-  {
-    clean_summary[i] = new unsigned int[2];
-  }
-
-  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
-    for (int j = 0; j < 2; ++j){
-      clean_summary[i][j] = (unsigned int) -1;
-    }
-  }
-  return clean_summary;
-}
-
 void readInCheckpointRegion(){
   std::fstream cpr;
   cpr.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
@@ -68,7 +52,7 @@ void findNextAvailableBlock(){
 }
 
 void readInSegment(){
-  std::fstream segment_file("DRIVE/SEGMENT" + std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::in);
+  std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::in);
 
   segment_file.read(SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
 
@@ -272,8 +256,9 @@ inode getInode(unsigned int inode_number){
   unsigned int global_block_pos = IMAP[inode_number];
   unsigned int segment_no = (global_block_pos / BLOCKS_IN_SEG) + 1;
   unsigned int local_block_pos = (global_block_pos % BLOCKS_IN_SEG) * BLOCK_SIZE;
-  printf("%u\n", inode_number);
+
   inode meta;
+
   if (global_block_pos == (unsigned int) -1) { // if there isn't an inode to be returned
     meta.size = -1;
     return meta;
@@ -281,10 +266,13 @@ inode getInode(unsigned int inode_number){
 
   if (segment_no != SEGMENT_NO){
     std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(segment_no), std::ios::binary | std::ios::in);
+
     segment_file.seekg(local_block_pos);
     char buffer[BLOCK_SIZE];
     segment_file.read(buffer, BLOCK_SIZE);
+
     std::memcpy(&meta, buffer, sizeof(inode));
+
     segment_file.close();
   }else{
     std::memcpy(&meta, &SEGMENT[local_block_pos], sizeof(inode));
@@ -293,7 +281,7 @@ inode getInode(unsigned int inode_number){
   return meta;
 }
 
-void writeCleanSegment(unsigned int ** clean_summary, char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE], unsigned int& next_available_block_clean, int& clean_segment_no, std::vector<inode>& inodes, std::set<int>& fragments){
+void writeCleanSegment(unsigned int clean_summary[BLOCKS_IN_SEG][2], char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE], unsigned int& next_available_block_clean, int& clean_segment_no, std::vector<inode>& inodes, std::set<int>& fragments){
   for (int i = 0; i < inodes.size(); ++i) {
     std::memcpy(&clean_segment[next_available_block_clean * BLOCK_SIZE], &inodes[i], sizeof(inode));
 
@@ -303,10 +291,8 @@ void writeCleanSegment(unsigned int ** clean_summary, char clean_segment[ASSIGNA
     clean_summary[next_available_block_clean][1] = -1;
 
     IMAP[inode_number] = (clean_segment_no - 1) * BLOCKS_IN_SEG + next_available_block_clean;
-    printf("IMAP[%u] = %u\n", inode_number, IMAP[inode_number]);
 
     next_available_block_clean++;
-    printf("inode\n");
   }
 
   for (auto fragment_no: fragments){
@@ -318,33 +304,37 @@ void writeCleanSegment(unsigned int ** clean_summary, char clean_segment[ASSIGNA
     CHECKPOINT_REGION[fragment_no] = next_available_block_clean + (clean_segment_no - 1) * BLOCKS_IN_SEG;
 
     next_available_block_clean++;
-    printf("imap\n");
   }
+
+  for (int i = 0; i < next_available_block_clean; ++i)
+    printf("CLEAN[%d] = {%u, %u}\n", i, clean_summary[i][0], clean_summary[i][1]);
 
   std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(clean_segment_no), std::fstream::binary | std::ios::out);
   segment_file.write(clean_segment, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
-  segment_file.write(reinterpret_cast<const char*>(&clean_summary), SUMMARY_BLOCKS * BLOCK_SIZE);
+  char buffer[SUMMARY_BLOCKS * BLOCK_SIZE];
+  std::memcpy(buffer, clean_summary, SUMMARY_BLOCKS * BLOCK_SIZE);
+  segment_file.write(buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
   segment_file.close();
 
   fragments.clear();
   inodes.clear();
   CLEAN_SEGMENTS[clean_segment_no - 1] = DIRTY;
   next_available_block_clean = 0;
-  /*for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
-    for (int j = 0; j < 2; ++j){
+
+  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
+    for (int j = 0; j < 2; ++j)
       clean_summary[i][j] = (unsigned int) -1;
-    }
-  }*/
-  clean_summary = initLocalSegmentSummary();
+  }
 
   clean_segment_no++;
 }
 
-void cleanSegment(int dirty_segment_no, unsigned int ** clean_summary, char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE], unsigned int& next_available_block_clean, int& clean_segment_no, std::vector<inode>& inodes, std::set<int>& fragments){
+void cleanSegment(int dirty_segment_no, unsigned int clean_summary[BLOCKS_IN_SEG][2], char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE], unsigned int& next_available_block_clean, int& clean_segment_no, std::vector<inode>& inodes, std::set<int>& fragments){
   // import dirty segment into memory
   unsigned int dirty_summary[BLOCKS_IN_SEG][2];
   char dirty_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE];
-  if (dirty_segment_no == SEGMENT_NO){    
+
+  if (dirty_segment_no == SEGMENT_NO){
     std::memcpy(dirty_summary, SEGMENT_SUMMARY, SUMMARY_BLOCKS * BLOCK_SIZE);
     std::memcpy(dirty_segment, SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
   }else{
@@ -352,25 +342,24 @@ void cleanSegment(int dirty_segment_no, unsigned int ** clean_summary, char clea
     std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(dirty_segment_no), std::ios::in | std::ios::out | std::ios::binary);
     segment_file.read(dirty_segment, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
     segment_file.read(summary_buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
-    std::memcpy(dirty_segment, summary_buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
+    std::memcpy(dirty_summary, summary_buffer, SUMMARY_BLOCKS * BLOCK_SIZE);
     segment_file.close();
   }
 
   for (int i = 0; i < ASSIGNABLE_BLOCKS; ++i){
     unsigned int inode_no = dirty_summary[i][0];
-    //std::cout << "dirty: " << dirty_summary[i][0]<< std::endl;
     unsigned int block_no = dirty_summary[i][1];
+
     if (inode_no != (unsigned int) -1 && block_no != (unsigned int) -1){       //--------datablock--------
-      if (ASSIGNABLE_BLOCKS - next_available_block_clean < 3 + fragments.size() + inodes.size()){
+      if (ASSIGNABLE_BLOCKS - next_available_block_clean < 3 + fragments.size() + inodes.size())
         writeCleanSegment(clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
-      }
-      printf("get\n");
-      printf("%u\n", inode_no);
+
       inode old_node = getInode(inode_no);
-      printf("got\n");
+
       if (old_node.size != (unsigned int) -1 && old_node.block_locations[block_no] == (dirty_segment_no-1) * BLOCKS_IN_SEG + i) { //if data block is live
         //deal with imap piece
         fragments.insert(inode_no / BLOCKS_IN_SEG);
+
         //deal with inode
         bool duplicate_inode = false; // sees whether this inode was already in our vector
         for (int j = 0; j < inodes.size(); ++j) {
@@ -380,25 +369,27 @@ void cleanSegment(int dirty_segment_no, unsigned int ** clean_summary, char clea
             break;
           }
         }
+
         if (!duplicate_inode){
+          old_node.block_locations[block_no] = (clean_segment_no-1) * BLOCKS_IN_SEG + next_available_block_clean;
           inodes.push_back(old_node);
         }
 
         //deal with actual data
         std::memcpy(&clean_segment[next_available_block_clean * BLOCK_SIZE], &dirty_segment[i * BLOCK_SIZE], BLOCK_SIZE);
         clean_summary[next_available_block_clean][0] = inode_no;
-        clean_summary[next_available_block_clean][0] = block_no;
+        clean_summary[next_available_block_clean][1] = block_no;
         next_available_block_clean++;
-        printf("data\n");
       }
     }else if (inode_no != (unsigned int) -1 && block_no == (unsigned int) -1){ //--------inode block--------
-      if (ASSIGNABLE_BLOCKS - next_available_block_clean < 2 + fragments.size() + inodes.size()){
+      if (ASSIGNABLE_BLOCKS - next_available_block_clean < 2 + fragments.size() + inodes.size())
         writeCleanSegment(clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
-      }
 
       if (IMAP[inode_no] == (dirty_segment_no-1) * BLOCKS_IN_SEG + i) { //if actual inode
         inode old_node = getInode(inode_no);
+
         fragments.insert(inode_no / BLOCKS_IN_SEG);
+
         bool duplicate_inode = false; // sees whether this inode was already in our vector
         for (int j = 0; j < inodes.size(); ++j) {
           if (strcmp(inodes[j].filename, old_node.filename) == 0){

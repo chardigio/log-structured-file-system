@@ -10,12 +10,15 @@ void makeDriveDir(){
 void initSegments(){
   std::ofstream outs[NO_SEGMENTS];
   for (int i = 0; i < NO_SEGMENTS; ++i){
-    std::string filename = "DRIVE/SEGMENT" + std::to_string(i+1);
-    outs[i].open(filename, std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
+    outs[i].open("DRIVE/SEGMENT"+std::to_string(i+1), std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
-    char true_zero = 0;
-    for (int j = 0; j < SEG_SIZE; ++j)
-      outs[i] << true_zero;
+    char true_zero[1] = {0};
+    for (int j = 0; j < ASSIGNABLE_BLOCKS * BLOCK_SIZE; ++j)
+      outs[i].write(true_zero, 1);
+
+    unsigned int neg1 = -1;
+    for (int j = 0; j < BLOCKS_IN_SEG * 2; ++j)
+      outs[i].write(reinterpret_cast<const char*>(&neg1), 4);
 
     outs[i].close();
   }

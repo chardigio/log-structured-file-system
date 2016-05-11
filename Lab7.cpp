@@ -3,16 +3,12 @@
 int shortcut_filename_ext = 0; //just bc lazy (DELETE!)
 
 void restart(){
-  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
-    for (int j = 0; j < 2; ++j){
-      SEGMENT_SUMMARY[i][j] = (unsigned int) -1;
-    }
-  }
   readInCheckpointRegion();
   findNextAvailableBlock();
   printf("Current Segment: %d\n", SEGMENT_NO);
   readInSegment();
   readInImap();
+  for (int i = 0; i < 20; ++i) printf("SEGSUM: %u, %u\n", SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 }
 
 void parseLine(std::string line) {

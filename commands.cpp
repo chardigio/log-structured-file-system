@@ -38,7 +38,6 @@ void import(std::string filename, std::string lfs_filename) {
   in.read(buffer, in_size);
   std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], buffer, in_size);
 
-
   //inode blocks
   inode meta;
   for (int i = 0; i < lfs_filename.length(); ++i){
@@ -111,6 +110,16 @@ void display(std::string lfs_filename, std::string amount, std::string start) {
   int start_byte = std::stoi(start);
   int end_byte = std::stoi(amount) + start_byte;
 
+  if (start_byte > meta.size) {
+    printf("Cannot specify a start byte greater than filesize.\n");
+    return;
+  }
+
+  if (end_byte > meta.size) {
+    printf("Amount specified too great, displaying until end of file.\n");
+    end_byte = meta.size - 1;
+  }
+
   for (int i = start_byte/BLOCK_SIZE; i <= end_byte/BLOCK_SIZE; ++i)
     printBlock(meta.block_locations[i], start_byte, end_byte, (i == start_byte/BLOCK_SIZE), (i == end_byte/BLOCK_SIZE));
 }
@@ -129,6 +138,11 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
   }
 
   inode meta = getInode(inode_number);
+
+  if (start_byte > meta.size) {
+    printf("Cannot specify a start byte greater than filesize.\n");
+    return;
+  }
 
   int start_block = start_byte / BLOCK_SIZE;
   int end_block = end_byte / BLOCK_SIZE;
@@ -168,12 +182,12 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
       end_block_seg_file.close();
       std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + end_byte], buffer, BLOCK_SIZE - end_byte);
     }else{
-      std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + end_byte], &SEGMENT[(meta.block_locations[end_block] % BLOCKS_IN_SEG) * BLOCK_SIZE + end_byte], BLOCK_SIZE - end_byte);
+      std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE + end_byte], &SEGMENT[(meta.block_locations[end_block] % BLOCKS_IN_SEG) * BLOCK_SIZE + (end_byte % BLOCK_SIZE)], BLOCK_SIZE - (end_byte % BLOCK_SIZE));
     }
   }else{
     meta.size = end_byte;
   }
-
+  printf("%s\n", "faew");
   for (int i = start_block; i <= end_block; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1) * BLOCKS_IN_SEG;
     SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = inode_number;
@@ -225,24 +239,23 @@ void list() {
 void clean(std::string amount_string) {
   int amount = std::stoi(amount_string);
   char segments_to_clean[amount];
-  int j = 0; // index of segments_to_clean
-  for (int i = 0; i < NO_SEGMENTS && j < amount; ++i) {
-    if (CLEAN_SEGMENTS[i] == DIRTY){
-      segments_to_clean[j++] = i+1;
-    }
+  int no_segments_to_clean = 0; // index of segments_to_clean
+  for (int i = 0; i < NO_SEGMENTS && no_segments_to_clean < amount; ++i) {
+    if (CLEAN_SEGMENTS[i] == DIRTY)
+      segments_to_clean[no_segments_to_clean++] = i+1;
   }
 
-  //unsigned int** clean_summary = (unsigned int**) malloc(BLOCKS_IN_SEG * sizeof(int*) + (2 * (BLOCKS_IN_SEG * sizeof(int))));
-  /*unsigned int clean_summary[BLOCKS_IN_SEG][2];
-  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
-    for (int j = 0; j < 2; ++j){
-      clean_summary[i][j] = (unsigned int) -1;
-    }
-  }*/
+  if (no_segments_to_clean < amount) {
+    printf("Not enough dirty segments available.\n");
+    return;
+  }
 
-  unsigned int ** clean_summary = initLocalSegmentSummary();
-  //initSegmentSummary(clean_summary);
-  //char* clean_segment = (char*) malloc(ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  unsigned int clean_summary[BLOCKS_IN_SEG][2];
+  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
+    for (int j = 0; j < 2; ++j)
+      clean_summary[i][j] = (unsigned int) -1;
+  }
+
   char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE];
   unsigned int next_available_block_clean = 0;
   int clean_segment_no = segments_to_clean[0];
@@ -257,8 +270,10 @@ void clean(std::string amount_string) {
   }
 
   writeCleanSegment(clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
+
   findNextAvailableBlock();
   readInSegment();
+  for (int i = 0; i < 20; ++i) printf("SEGSUM: %u, %u\n", SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 }
 
 void exit() {
