@@ -58,7 +58,7 @@ void import(std::string filename, std::string lfs_filename) {
   updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
 
   for (int i = AVAILABLE_BLOCK - meta.size/BLOCK_SIZE - 3; i < AVAILABLE_BLOCK; ++i)
-    printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
+    printf("SUMMARY[%d]: {%u, %u}\n", i+(SEGMENT_NO-1)*BLOCKS_IN_SEG, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 
   in.close();
 }
@@ -207,7 +207,7 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
   updateImap(inode_number, (AVAILABLE_BLOCK - 1) + (SEGMENT_NO-1)*BLOCKS_IN_SEG);
 
   for (int i = AVAILABLE_BLOCK - blocks_needed; i < AVAILABLE_BLOCK; ++i)
-    printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
+    printf("SUMMARY[%d]: {%u, %u}\n", i+(SEGMENT_NO-1)*BLOCKS_IN_SEG, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 }
 
 void list() {

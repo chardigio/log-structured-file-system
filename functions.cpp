@@ -10,16 +10,11 @@ std::vector<std::string> split(const std::string &str) {
 }
 
 void readInCheckpointRegion(){
-  std::fstream cpr;
-  cpr.open("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
+  std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::ios::binary | std::ios::out | std::ios::in);
 
-  char address_str[4];
-  unsigned int address_int = 0;
-
-  for (int i = 0; i < IMAP_BLOCKS; ++i){
-    cpr.read(address_str, 4);
-    std::memcpy(&CHECKPOINT_REGION[i], address_str, 4);
-  }
+  char buffer[IMAP_BLOCKS * 4];
+  cpr.read(buffer, IMAP_BLOCKS * 4);
+  std::memcpy(CHECKPOINT_REGION, buffer, IMAP_BLOCKS * 4);
 
   cpr.read(CLEAN_SEGMENTS, NO_SEGMENTS);
 
@@ -57,10 +52,10 @@ void readInImapBlock(unsigned int address, unsigned int fragment_no){
   unsigned int block_start_pos = (address % BLOCKS_IN_SEG) * BLOCK_SIZE;
   std::fstream segment_file("DRIVE/SEGMENT" + std::to_string(segment_no), std::fstream::binary | std::ios::in | std::ios::out);
 
-  segment_file.seekg(block_start_pos);
   char buffer[BLOCK_SIZE];
+  segment_file.seekg(block_start_pos);
   segment_file.read(buffer, BLOCK_SIZE);
-  std::memcpy(&IMAP[fragment_no*BLOCK_SIZE], buffer, BLOCK_SIZE);
+  std::memcpy(&IMAP[fragment_no*(BLOCK_SIZE/4)], buffer, BLOCK_SIZE);
 
   segment_file.close();
 }
@@ -74,9 +69,7 @@ void readInImap(){
 
 void writeOutCheckpointRegion(){
   std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::fstream::binary | std::ios::out);
-  for (int i = 0; i < IMAP_BLOCKS; ++i){
-    std::cout << CHECKPOINT_REGION[i] << std::endl;
-  }
+
   char buffer[IMAP_BLOCKS * 4];
   std::memcpy(buffer, CHECKPOINT_REGION, IMAP_BLOCKS * 4);
   cpr.write(buffer, IMAP_BLOCKS * 4);
@@ -155,8 +148,8 @@ void updateImap(unsigned int inode_number, unsigned int block_position){
   IMAP[inode_number] = block_position;
 
   unsigned int fragment_no = inode_number / (BLOCKS_IN_SEG / 4);
-  std::cout << "FRAGMENT NO: " << fragment_no << std::endl;
-  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], &IMAP[fragment_no * BLOCK_SIZE], BLOCK_SIZE);
+
+  std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], &IMAP[fragment_no * (BLOCK_SIZE / 4)], BLOCK_SIZE);
 
   SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = -1;
   SEGMENT_SUMMARY[AVAILABLE_BLOCK][1] = fragment_no;
