@@ -17,4 +17,4 @@ clean:
 	rm -f *.o *~ *.swp Lab7 DriveInit s b;
 	rm -rf DRIVE/;
 
-again:	clean drive all
+again:	clean all drive

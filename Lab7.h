@@ -89,3 +89,9 @@ Program 2:
  track which segments are clean
  array[32] clean/not clean
  */
+
+/*
+
+BIGGEST THING LEFT: DEALING WITH LIFE AFTER SEGMENT32
+
+*/

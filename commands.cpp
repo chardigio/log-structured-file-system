@@ -227,25 +227,37 @@ void clean(std::string amount_string) {
   char segments_to_clean[amount];
   int j = 0; // index of segments_to_clean
   for (int i = 0; i < NO_SEGMENTS && j < amount; ++i) {
-    if (CLEAN_SEGMENTS[i] == DIRTY)
+    if (CLEAN_SEGMENTS[i] == DIRTY){
       segments_to_clean[j++] = i+1;
+    }
   }
 
-  unsigned int** clean_summary = (unsigned int**) malloc(BLOCKS_IN_SEG * sizeof(int*) + (2 * (BLOCKS_IN_SEG * sizeof(int))));
-  initSegmentSummary(clean_summary);
-  char* clean_segment = (char*) malloc(ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  //unsigned int** clean_summary = (unsigned int**) malloc(BLOCKS_IN_SEG * sizeof(int*) + (2 * (BLOCKS_IN_SEG * sizeof(int))));
+  unsigned int clean_summary[BLOCKS_IN_SEG][2];
+  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
+    for (int j = 0; j < 2; ++j){
+      clean_summary[i][j] = (unsigned int) -1;
+    }
+  }
+  //initSegmentSummary(clean_summary);
+  //char* clean_segment = (char*) malloc(ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  char clean_segment[ASSIGNABLE_BLOCKS * BLOCK_SIZE];
   unsigned int next_available_block_clean = 0;
   int clean_segment_no = segments_to_clean[0];
   std::vector<inode> inodes;
   std::set<int> fragments;
+
+  printf("Cleaning segments...\n");
 
   for (int i = 0; i < amount; i++){
     CLEAN_SEGMENTS[segments_to_clean[i]] = CLEAN;
     cleanSegment(segments_to_clean[i], clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
   }
 
-  free(clean_summary);
-  free(clean_segment);
+  writeCleanSegment(clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
+
+  findNextAvailableBlock();
+  readInSegment();
 }
 
 void exit() {

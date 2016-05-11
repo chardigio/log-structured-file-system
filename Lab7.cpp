@@ -3,7 +3,11 @@
 int shortcut_filename_ext = 0; //just bc lazy (DELETE!)
 
 void restart(){
-  initSegmentSummary();
+  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
+    for (int j = 0; j < 2; ++j){
+      SEGMENT_SUMMARY[i][j] = (unsigned int) -1;
+    }
+  }
   readInCheckpointRegion();
   findNextAvailableBlock();
   printf("Current Segment: %d\n", SEGMENT_NO);
