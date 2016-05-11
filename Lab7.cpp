@@ -13,8 +13,8 @@ void restart(){
 void parseLine(std::string line);
 
 void test(){
-  for (int i = 0; i < 400; ++i){
-    parseLine("a");
+  for (int i = 0; i < 10240; ++i){
+    parseLine("r");
   }
 }
 
