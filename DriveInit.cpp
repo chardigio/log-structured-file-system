@@ -73,7 +73,7 @@ int main(int argc, char const *argv[]){
   initSegments();
   initCheckpointRegion();
   initFilenameMap();
-  makeTestFiles(); // shortcutplsdelete
+  //makeTestFiles();
   printf("%s\n", "Drive created.");
   return 0;
 }

@@ -1,6 +1,6 @@
 #include "Commands.cpp"
 
-int shortcut_filename_ext = 0; //just bc lazy (DELETE!)
+//int shortcut_filename_ext = 0;
 
 void restart(){
   readInCheckpointRegion();
@@ -8,7 +8,6 @@ void restart(){
   printf("Current Segment: %d\n", SEGMENT_NO);
   readInSegment();
   readInImap();
-  for (int i = 0; i < 20; ++i) printf("SEGSUM: %u, %u\n", SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 }
 
 void parseLine(std::string line) {
@@ -24,10 +23,10 @@ void parseLine(std::string line) {
   else if (command[0] == "list"      && command.size() == 1) list();
   else if (command[0] == "clean"     && command.size() == 2) clean(command[1]);
   else if (command[0] == "exit"      && command.size() == 1) exit();
-  else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
-  else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
-  else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
-  else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));  //just bc lazy (DELETE!)
+  //else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));
+  //else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
+  //else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));
+  //else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));
   else std::cout << "Command not recognized." << std::endl;
 }
 

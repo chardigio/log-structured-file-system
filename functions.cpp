@@ -5,20 +5,9 @@ std::vector<std::string> split(const std::string &str) {
   std::stringstream ss(str);
   std::vector<std::string> tokens;
   int no_tokens = 0;
-  while (ss >> buf && no_tokens++ < 128+2) tokens.push_back(buf);
+  while (ss >> buf) tokens.push_back(buf);
   return tokens;
 }
-
-/*
-void initSegmentSummary(unsigned int summary[BLOCKS_IN_SEG][2]){
-  for (int i = 0; i < BLOCKS_IN_SEG; ++i) {
-    for (int j = 0; j < 2; ++j){
-      printf("%d\n", 2*i+j);
-      summary[i][j] = (unsigned int) -1;
-    }
-  }
-}
-*/
 
 void readInCheckpointRegion(){
   std::fstream cpr;
@@ -64,7 +53,6 @@ void readInSegment(){
 }
 
 void readInImapBlock(unsigned int address, unsigned int fragment_no){
-  // only works if the segment in memory has been written to drive
   unsigned int segment_no = (address / BLOCKS_IN_SEG) + 1;
   unsigned int block_start_pos = (address % BLOCKS_IN_SEG) * BLOCK_SIZE;
   std::fstream segment_file("DRIVE/SEGMENT" + std::to_string(segment_no), std::fstream::binary | std::ios::in | std::ios::out);
@@ -84,18 +72,6 @@ void readInImap(){
   }
 }
 
-void writeOutSegment(){
-  std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::out);
-
-  segment_file.write(SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
-  segment_file.write(reinterpret_cast<const char*>(&SEGMENT_SUMMARY), SUMMARY_BLOCKS * BLOCK_SIZE);
-
-  SEGMENT_NO++;
-  AVAILABLE_BLOCK = 0;
-
-  segment_file.close();
-}
-
 void writeOutCheckpointRegion(){
   std::fstream cpr("DRIVE/CHECKPOINT_REGION", std::fstream::binary | std::ios::out);
 
@@ -103,6 +79,31 @@ void writeOutCheckpointRegion(){
   cpr.write(CLEAN_SEGMENTS, NO_SEGMENTS);
 
   cpr.close();
+}
+
+void findNextCleanSegment(){
+  for (int i = 0; i < NO_SEGMENTS; ++i){
+    if (CLEAN_SEGMENTS[i] == CLEAN) {
+      SEGMENT_NO = i+1;
+      return;
+    }
+  }
+
+  printf("No available memory remaining. Exiting...\n");
+  writeOutCheckpointRegion();
+  exit(0);
+}
+
+void writeOutSegment(){
+  std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(SEGMENT_NO), std::fstream::binary | std::ios::out);
+
+  segment_file.write(SEGMENT, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
+  segment_file.write(reinterpret_cast<const char*>(&SEGMENT_SUMMARY), SUMMARY_BLOCKS * BLOCK_SIZE);
+
+  segment_file.close();
+
+  findNextCleanSegment();
+  AVAILABLE_BLOCK = 0;
 }
 
 unsigned int nextInodeNumber(){
@@ -167,13 +168,9 @@ int getFileSize(int inode_number){
   unsigned int block_position = IMAP[inode_number];
   unsigned int segment_location = block_position/BLOCKS_IN_SEG + 1;
   unsigned int local_block_pos = (block_position % BLOCKS_IN_SEG) * BLOCK_SIZE;
-  if(block_position == -1){
-    //the node doesn't exist
-    //this should never get here and would be an error on our part
-    std::cout << "Lethal error dude slow your roll." << std::endl;
-  }
 
   inode meta;
+
   if(SEGMENT_NO == segment_location){
     std::memcpy(&meta, &SEGMENT[local_block_pos], sizeof(inode));
   }else{
@@ -243,13 +240,6 @@ void printBlock(unsigned int global_block_pos, unsigned int start_byte, unsigned
     printf("%c", buffer[i]);
 
   if (last_block) printf("\n");
-
-  /*
-  printf("local_block_pos: %u\n", local_block_pos);
-  printf("buffer_size: %u\n", buffer_size);
-  printf("start_byte: %u\n", start_byte);
-  printf("end_byte: %u\n", end_byte);
-  */
 }
 
 inode getInode(unsigned int inode_number){
@@ -307,7 +297,7 @@ void writeCleanSegment(unsigned int clean_summary[BLOCKS_IN_SEG][2], char clean_
   }
 
   for (int i = 0; i < next_available_block_clean; ++i)
-    printf("CLEAN[%d] = {%u, %u}\n", i, clean_summary[i][0], clean_summary[i][1]);
+    printf("CLEAN[%d]: {%u, %u}\n", i, clean_summary[i][0], clean_summary[i][1]);
 
   std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(clean_segment_no), std::fstream::binary | std::ios::out);
   segment_file.write(clean_segment, ASSIGNABLE_BLOCKS * BLOCK_SIZE);

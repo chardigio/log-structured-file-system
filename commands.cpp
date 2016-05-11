@@ -79,6 +79,8 @@ void remove(std::string lfs_filename) {
   filemap.close();
 
   updateImap(inode_number, (unsigned int) -1);
+
+  printf("SUMMARY[%d]: {%u, %u}\n", AVAILABLE_BLOCK - 1, SEGMENT_SUMMARY[AVAILABLE_BLOCK - 1][0], SEGMENT_SUMMARY[AVAILABLE_BLOCK - 1][1]);
 }
 
 void cat(std::string lfs_filename) {
@@ -116,8 +118,8 @@ void display(std::string lfs_filename, std::string amount, std::string start) {
   }
 
   if (end_byte > meta.size) {
-    printf("Amount specified too great, displaying until end of file.\n");
-    end_byte = meta.size - 1;
+    printf("\t\t   ============WARNING============\n\tAmount specified too great, displaying until end of file.\n");
+    end_byte = meta.size;
   }
 
   for (int i = start_byte/BLOCK_SIZE; i <= end_byte/BLOCK_SIZE; ++i)
@@ -187,7 +189,7 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
   }else{
     meta.size = end_byte;
   }
-  printf("%s\n", "faew");
+
   for (int i = start_block; i <= end_block; ++i){
     meta.block_locations[i] = AVAILABLE_BLOCK + (SEGMENT_NO-1) * BLOCKS_IN_SEG;
     SEGMENT_SUMMARY[AVAILABLE_BLOCK][0] = inode_number;
@@ -201,20 +203,6 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
 
   for (int i = AVAILABLE_BLOCK - blocks_needed; i < AVAILABLE_BLOCK; ++i)
     printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
-
-  /*
-  printf("%c\n", character);
-  printf("%d\n", start_byte);
-  printf("%d\n", end_byte);
-  printf("%d\n", start_block);
-  printf("%d\n", end_block);
-  printf("%d\n", start_block_seg);
-  //printf("%d\n", end_block_seg);
-  printf("%d, %d\n", meta.size, meta.block_locations[0]);
-  printf("%u\n", inode_number);
-  printf("%d, %d ---\n", AVAILABLE_BLOCK, SEGMENT_NO);
-  printf("%u\n", IMAP[inode_number]);
-  */
 }
 
 void list() {
@@ -239,15 +227,19 @@ void list() {
 void clean(std::string amount_string) {
   int amount = std::stoi(amount_string);
   char segments_to_clean[amount];
-  int no_segments_to_clean = 0; // index of segments_to_clean
+  int no_segments_to_clean = 0;
+
   for (int i = 0; i < NO_SEGMENTS && no_segments_to_clean < amount; ++i) {
     if (CLEAN_SEGMENTS[i] == DIRTY)
       segments_to_clean[no_segments_to_clean++] = i+1;
   }
 
-  if (no_segments_to_clean < amount) {
-    printf("Not enough dirty segments available.\n");
+  if (no_segments_to_clean == 0){
+    printf("There are no dirty segments to clean.\n");
     return;
+  } else if (no_segments_to_clean < amount) {
+    printf("Not enough dirty segments available.\n");
+    amount = no_segments_to_clean;
   }
 
   unsigned int clean_summary[BLOCKS_IN_SEG][2];
@@ -262,7 +254,9 @@ void clean(std::string amount_string) {
   std::vector<inode> inodes;
   std::set<int> fragments;
 
-  printf("Cleaning segments...\n");
+  if (amount > 1) printf("Cleaning %d segments...\n", amount);
+  else            printf("Cleaning 1 segment...\n");
+
 
   for (int i = 0; i < amount; i++){
     CLEAN_SEGMENTS[segments_to_clean[i]] = CLEAN;
@@ -273,7 +267,6 @@ void clean(std::string amount_string) {
 
   findNextAvailableBlock();
   readInSegment();
-  for (int i = 0; i < 20; ++i) printf("SEGSUM: %u, %u\n", SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
 }
 
 void exit() {
