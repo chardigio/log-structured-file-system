@@ -150,7 +150,7 @@ void updateImap(unsigned int inode_number, unsigned int block_position){
 
   IMAP[inode_number] = block_position;
 
-  unsigned int fragment_no = inode_number / BLOCKS_IN_SEG;
+  unsigned int fragment_no = inode_number / BLOCKS_IN_SEG / 4;
 
   std::memcpy(&SEGMENT[AVAILABLE_BLOCK * BLOCK_SIZE], &IMAP[fragment_no * BLOCK_SIZE], BLOCK_SIZE);
 
@@ -378,7 +378,7 @@ void cleanSegment(int dirty_segment_no, unsigned int clean_summary[BLOCKS_IN_SEG
       if (IMAP[inode_no] == (dirty_segment_no-1) * BLOCKS_IN_SEG + i) { //if actual inode
         inode old_node = getInode(inode_no);
 
-        fragments.insert(inode_no / BLOCKS_IN_SEG);
+        fragments.insert(inode_no / BLOCKS_IN_SEG / 4);
 
         bool duplicate_inode = false; // sees whether this inode was already in our vector
         for (int j = 0; j < inodes.size(); ++j) {
