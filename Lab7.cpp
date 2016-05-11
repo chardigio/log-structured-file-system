@@ -10,6 +10,14 @@ void restart(){
   readInImap();
 }
 
+void parseLine(std::string line);
+
+void test(){
+  for (int i = 0; i < 400; ++i){
+    parseLine("a");
+  }
+}
+
 void parseLine(std::string line) {
   if (line.length() == 0) return;
 
@@ -27,6 +35,7 @@ void parseLine(std::string line) {
   //else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));
+  else if (command[0] == "test"      && command.size() == 1) test();
   else std::cout << "Command not recognized." << std::endl;
 }
 

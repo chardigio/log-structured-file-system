@@ -150,7 +150,7 @@ void overwrite(std::string lfs_filename, std::string amount_string, std::string 
     printf("Cannot specify a character amount greater than the max filesize.\n");
     return;
   }
-  
+
   int start_block = start_byte / BLOCK_SIZE;
   int end_block = end_byte / BLOCK_SIZE;
   int blocks_needed = end_block - start_block + 3;
