@@ -73,6 +73,7 @@ void parseLine(std::string line) {
   else if (command[0] == "cpr"       && command.size() == 1) printCheckpointRegion();
   else if (command[0] == "cleans"    && command.size() == 1) printCleans();
   else if (command[0] == "nextblock" && command.size() == 1) printf("Next Available Block: %u\n", AVAILABLE_BLOCK);
+  else if (command[0] == "clear"     && command.size() == 1) std::system("clear");
   else std::cout << "Command not recognized." << std::endl;
 }
 
