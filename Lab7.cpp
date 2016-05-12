@@ -10,8 +10,8 @@ void restart(){
 }
 
 void test(){
-  for (int i = 0; i < MAX_FILES; ++i)
-    import("README.md", "file"+std::to_string(shortcut_filename_ext++));
+  for (int i = 0; i < MAX_FILES/3; ++i)
+    import("Lab7.h", "file"+std::to_string(shortcut_filename_ext++));
 }
 
 void printSegmentSummary(std::string amount_string, std::string start_string){
@@ -45,6 +45,7 @@ void printCleans(){
     if (CLEAN_SEGMENTS[i] == CLEAN)
       printf("%d ", i+1);
   }
+  printf("\n");
 }
 
 void parseLine(std::string line) {
@@ -62,7 +63,7 @@ void parseLine(std::string line) {
   else if (command[0] == "exit"      && command.size() == 1) exit();
   else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
-  else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));
+  else if (command[0] == "r"         && command.size() == 1) import("Lab7.h", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "ls"        && command.size() == 1) list();
   else if (command[0] == "test"      && command.size() == 1) test();
