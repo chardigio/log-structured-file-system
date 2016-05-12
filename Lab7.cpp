@@ -59,6 +59,7 @@ void parseLine(std::string line) {
   else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));
+  else if (command[0] == "ls"        && command.size() == 1) list();
   else if (command[0] == "test"      && command.size() == 1) test();
   else if (command[0] == "segmentno" && command.size() == 1) printf("Current Segment: %d\n", SEGMENT_NO);
   else if (command[0] == "summary"   && command.size() == 3) printSegmentSummary(command[1], command[2]);
