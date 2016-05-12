@@ -266,6 +266,7 @@ void clean(std::string amount_string) {
 
   for (int i = 0; i < amount; i++){
     CLEAN_SEGMENTS[segments_to_clean[i]] = CLEAN;
+    printf("Cleaning Segment %d...\n", segments_to_clean[i]);
     cleanSegment(segments_to_clean[i], clean_summary, clean_segment, next_available_block_clean, clean_segment_no, inodes, fragments);
   }
 
