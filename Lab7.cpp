@@ -5,16 +5,40 @@ int shortcut_filename_ext = 0;
 void restart(){
   readInCheckpointRegion();
   findNextAvailableBlock();
-  printf("Current Segment: %d\n", SEGMENT_NO);
   readInSegment();
   readInImap();
 }
 
-void parseLine(std::string line);
-
 void test(){
-  for (int i = 0; i < 10240; ++i){
-    parseLine("r");
+  for (int i = 0; i < MAX_FILES; ++i)
+    import("README.md", "file"+std::to_string(shortcut_filename_ext++));
+}
+
+void printSegmentSummary(std::string amount_string, std::string start_string){
+  int start = std::stoi(start_string);
+  int end = (std::stoi(amount_string) + start < ASSIGNABLE_BLOCKS) ? std::stoi(amount_string) + start : ASSIGNABLE_BLOCKS;
+  for (int i = start; i < end; ++i)
+    printf("SUMMARY[%d]: {%u, %u}\n", i, SEGMENT_SUMMARY[i][0], SEGMENT_SUMMARY[i][1]);
+}
+
+void mimport(std::string filename, std::string lfs_filename, std::string amount_string) {
+  int amount = (std::stoi(amount_string) < MAX_FILES) ? std::stoi(amount_string) : MAX_FILES;
+  for (int i = 0; i < amount; ++i)
+    import(filename, lfs_filename+std::to_string(i));
+}
+
+void printImap(std::string amount_string, std::string start_string){
+  int start = std::stoi(start_string);
+  int end = (std::stoi(amount_string) + start < MAX_FILES) ? std::stoi(amount_string) + start : MAX_FILES;
+  for (int i = start; i < end; ++i)
+    printf("IMAP[%d]: %u\n", i, IMAP[i]);
+}
+
+void printCleans(){
+  printf("Clean segments: ");
+  for (int i = 0; i < NO_SEGMENTS; ++i){
+    if (CLEAN_SEGMENTS[i] == CLEAN)
+      printf("%d ", i+1);
   }
 }
 
@@ -31,11 +55,17 @@ void parseLine(std::string line) {
   else if (command[0] == "list"      && command.size() == 1) list();
   else if (command[0] == "clean"     && command.size() == 2) clean(command[1]);
   else if (command[0] == "exit"      && command.size() == 1) exit();
-  //else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));
-  //else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
+  else if (command[0] == "b"         && command.size() == 1) import("b", "file"+std::to_string(shortcut_filename_ext++));
+  else if (command[0] == "s"         && command.size() == 1) import("s", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "r"         && command.size() == 1) import("README.md", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "a"         && command.size() == 1) import("lorem.txt", "file"+std::to_string(shortcut_filename_ext++));
   else if (command[0] == "test"      && command.size() == 1) test();
+  else if (command[0] == "segmentno" && command.size() == 1) printf("Current Segment: %d\n", SEGMENT_NO);
+  else if (command[0] == "summary"   && command.size() == 3) printSegmentSummary(command[1], command[2]);
+  else if (command[0] == "mimport"   && command.size() == 4) mimport(command[1], command[2], command[3]);
+  else if (command[0] == "imap"      && command.size() == 3) printImap(command[1], command[2]);
+  else if (command[0] == "cleans"    && command.size() == 1) printCleans();
+  else if (command[0] == "nextblock" && command.size() == 1) printf("Next Available Block: %u\n", AVAILABLE_BLOCK);
   else std::cout << "Command not recognized." << std::endl;
 }
 
