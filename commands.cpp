@@ -263,7 +263,6 @@ void clean(std::string amount_string) {
   if (amount > 1) printf("Cleaning %d segments...\n", amount);
   else            printf("Cleaning 1 segment...\n");
 
-
   for (int i = 0; i < amount; i++){
     CLEAN_SEGMENTS[segments_to_clean[i]] = CLEAN;
     printf("Cleaning Segment %d...\n", segments_to_clean[i]);

@@ -283,7 +283,7 @@ void writeCleanSegment(unsigned int clean_summary[BLOCKS_IN_SEG][2], char clean_
   }
 
   for (auto fragment_no: fragments){
-    std::memcpy(&clean_segment[next_available_block_clean * BLOCK_SIZE], &IMAP[fragment_no * BLOCK_SIZE], BLOCK_SIZE);
+    std::memcpy(&clean_segment[next_available_block_clean * BLOCK_SIZE], &IMAP[fragment_no * (BLOCK_SIZE / 4)], BLOCK_SIZE);
 
     clean_summary[next_available_block_clean][0] = -1;
     clean_summary[next_available_block_clean][1] = fragment_no;
