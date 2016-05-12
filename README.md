@@ -2,6 +2,10 @@
 
 ## CS350 Program 2 (Lab 7)
 
+Log-structured file system emulation implemented in C++.
+
+###### See PDF for more details on the project description.
+
 ### Group members:
  * Annika Wiesinger
  * Charlie DiGiovanna
