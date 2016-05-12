@@ -293,8 +293,8 @@ void writeCleanSegment(unsigned int clean_summary[BLOCKS_IN_SEG][2], char clean_
     next_available_block_clean++;
   }
 
-  for (int i = 0; i < next_available_block_clean; ++i)
-    printf("CLEAN[%d]: {%u, %u}\n", i, clean_summary[i][0], clean_summary[i][1]);
+  //for (int i = 0; i < next_available_block_clean; ++i)
+    //printf("CLEAN[%d]: {%u, %u}\n", i, clean_summary[i][0], clean_summary[i][1]);
 
   std::fstream segment_file("DRIVE/SEGMENT"+std::to_string(clean_segment_no), std::fstream::binary | std::ios::out);
   segment_file.write(clean_segment, ASSIGNABLE_BLOCKS * BLOCK_SIZE);
