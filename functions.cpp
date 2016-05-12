@@ -217,7 +217,7 @@ void printBlock(unsigned int global_block_pos, unsigned int start_byte, unsigned
   unsigned int buffer_size;
   if (first_block && last_block) buffer_size = end_byte - start_byte;
   else if (last_block) buffer_size = end_byte % BLOCK_SIZE;
-  else if (first_block) buffer_size = BLOCK_SIZE - start_byte;
+  else if (first_block) buffer_size = BLOCK_SIZE - (start_byte % BLOCK_SIZE);
   else buffer_size = BLOCK_SIZE;
 
   char buffer[buffer_size];

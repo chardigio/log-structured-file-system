@@ -7,6 +7,14 @@ void import(std::string filename, std::string lfs_filename) {
     return;
   }
 
+  //get input file length
+  in.seekg(0, std::ios::end);
+  int in_size = in.tellg();
+  in.seekg(0, std::ios::beg);
+
+  if ((in_size / BLOCK_SIZE) + 3 > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
+    writeOutSegment();
+
   if (lfs_filename.length() > 254){
     std::cout << "Filename too large." << std::endl;
     return;
@@ -24,14 +32,6 @@ void import(std::string filename, std::string lfs_filename) {
     return;
   }
   updateFilemap(inode_number, lfs_filename);
-
-  //get input file length
-  in.seekg(0, std::ios::end);
-  int in_size = in.tellg();
-  in.seekg(0, std::ios::beg);
-
-  if ((in_size / BLOCK_SIZE) + 3 > ASSIGNABLE_BLOCKS - AVAILABLE_BLOCK)
-    writeOutSegment();
 
   //read from file we're importing and write it in blocks of SEGMENT
   char buffer[in_size];
