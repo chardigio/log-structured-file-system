@@ -34,6 +34,11 @@ void printImap(std::string amount_string, std::string start_string){
     printf("IMAP[%d]: %u\n", i, IMAP[i]);
 }
 
+void printCheckpointRegion(){
+  for (int i = 0; i < IMAP_BLOCKS; ++i)
+    printf("CPR[%d]: %u\n", i, CHECKPOINT_REGION[i]);
+}
+
 void printCleans(){
   printf("Clean segments: ");
   for (int i = 0; i < NO_SEGMENTS; ++i){
@@ -65,6 +70,7 @@ void parseLine(std::string line) {
   else if (command[0] == "summary"   && command.size() == 3) printSegmentSummary(command[1], command[2]);
   else if (command[0] == "mimport"   && command.size() == 4) mimport(command[1], command[2], command[3]);
   else if (command[0] == "imap"      && command.size() == 3) printImap(command[1], command[2]);
+  else if (command[0] == "cpr"       && command.size() == 1) printCheckpointRegion();
   else if (command[0] == "cleans"    && command.size() == 1) printCleans();
   else if (command[0] == "nextblock" && command.size() == 1) printf("Next Available Block: %u\n", AVAILABLE_BLOCK);
   else std::cout << "Command not recognized." << std::endl;
