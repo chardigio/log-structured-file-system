@@ -55,7 +55,7 @@ void readInImapBlock(unsigned int address, unsigned int fragment_no){
   char buffer[BLOCK_SIZE];
   segment_file.seekg(block_start_pos);
   segment_file.read(buffer, BLOCK_SIZE);
-  std::memcpy(&IMAP[fragment_no*(BLOCK_SIZE/4)], buffer, BLOCK_SIZE);
+  std::memcpy(&IMAP[fragment_no*BLOCK_SIZE], buffer, BLOCK_SIZE);
 
   segment_file.close();
 }
