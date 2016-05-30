@@ -7,8 +7,8 @@ Log-structured file system simulation implemented in C++.
 ###### See PDF for more details on the project description.
 
 ### Group members:
- * Annika Wiesinger
- * Charlie DiGiovanna
+ * [Annika Wiesinger](https://github.com/aawiesinger)
+ * [Charlie DiGiovanna] (https://github.com/cd17822)
 
 #### How to run lab 7:
 1. make drive (if first time)
