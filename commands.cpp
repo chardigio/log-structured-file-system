@@ -17,11 +17,13 @@ void import(std::string filename, std::string lfs_filename) {
 
   if (lfs_filename.length() > 254){
     std::cout << "Filename too large." << std::endl;
+    in.close();
     return;
   }
 
   if (getInodeNumberOfFile(lfs_filename) != (unsigned int) -1){
     std::cout << "Duplicate filename." << std::endl;
+    in.close();
     return;
   }
 
@@ -29,6 +31,7 @@ void import(std::string filename, std::string lfs_filename) {
 
   if (inode_number == -1) {
     std::cout << "Max files reached." << std::endl;
+    in.close();
     return;
   }
   updateFilemap(inode_number, lfs_filename);
